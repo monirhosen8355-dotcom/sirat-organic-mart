@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@theme {
+  --color-emerald: #10B981;
+  --color-deep-green: #14532D;
+  --color-natural-bg: #F7FAF7;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+
+  --font-sans: "Hind Siliguri", "Noto Sans Bengali", system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-natural-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
