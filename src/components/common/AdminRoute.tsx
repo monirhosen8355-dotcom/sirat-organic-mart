@@ -1,0 +1,28 @@
+import { Navigate, Outlet } from 'react-router-dom'
+import { useAuthStore } from '../../store/authStore'
+import Spinner from './Spinner'
+
+/**
+ * অ্যাডমিন রুটের জন্য গার্ড (/admin/* — লগইন পেজ ছাড়া বাকি সব)।
+ * লগইন করা না থাকলে বা admin না হলে /admin/login-এ পাঠিয়ে দেয়।
+ * শুধু client-side redirect — আসল নিরাপত্তা firestore.rules-এর isAdmin() থেকেই আসে।
+ */
+const AdminRoute = () => {
+  const { user, isAdmin, isLoading } = useAuthStore()
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    )
+  }
+
+  if (!user || !isAdmin) {
+    return <Navigate to="/admin/login" replace />
+  }
+
+  return <Outlet />
+}
+
+export default AdminRoute

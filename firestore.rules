@@ -1,0 +1,117 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Helper functions ----------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // ---------- admins (allow-list, admin-only readable, never client-writable) ----------
+    match /admins/{adminId} {
+      allow read: if isAdmin();
+      allow write: if false; // only set manually via Firebase Console
+    }
+
+    // ---------- users ----------
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+
+      match /addresses/{addressId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+    }
+
+    // ---------- products (public read, admin write) ----------
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ---------- categories (public read, admin write) ----------
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ---------- orders ----------
+    match /orders/{orderId} {
+      // guest orders have no userId (or null); logged-in customer orders store the uid
+      // মূল্য প্রতিটা আইটেমের বিপরীতে products কালেকশনের সাথে মিলিয়ে যাচাই করা হয় না
+      // (সেটার জন্য Cloud Function লাগবে) — কিন্তু সবচেয়ে সহজে-শোষণযোগ্য ফাঁকগুলো
+      // (ভুয়া status, ঋণাত্মক ছাড়, ভুল টোটাল) এখানে আটকানো হচ্ছে।
+      allow create: if
+        request.resource.data.status == 'pending' &&
+        request.resource.data.paymentMethod == 'cod' &&
+        request.resource.data.discount >= 0 &&
+        request.resource.data.subtotal > 0 &&
+        request.resource.data.items.size() > 0 &&
+        request.resource.data.total ==
+          request.resource.data.subtotal +
+          request.resource.data.deliveryCharge -
+          request.resource.data.discount;
+      allow read: if isAdmin() ||
+        (isSignedIn() && resource.data.userId == request.auth.uid) ||
+        !('userId' in resource.data);
+      // customers can NEVER update/delete an order — only admin (status changes etc.)
+      allow update: if isAdmin();
+      allow delete: if false;
+
+      match /statusHistory/{historyId} {
+        allow read: if isAdmin() ||
+          (isSignedIn() && get(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid);
+        allow write: if isAdmin();
+      }
+    }
+
+    // ---------- reviews (public read, signed-in create, admin moderate) ----------
+    match /products/{productId}/reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.approved == false &&
+        request.resource.data.rating is int &&
+        request.resource.data.rating >= 1 &&
+        request.resource.data.rating <= 5;
+      allow update: if isAdmin();
+      allow delete: if isAdmin() ||
+        (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    // ---------- coupons (admin-only read/write — validated server-side via a service, not public) ----------
+    match /coupons/{couponId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // ---------- siteSettings (public read, admin write) ----------
+    match /siteSettings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ---------- legalPages (public read, admin write) ----------
+    match /legalPages/{pageId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ---------- default deny for anything not explicitly listed ----------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
