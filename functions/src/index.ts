@@ -1,10 +1,10 @@
-import { onCall, HttpsError } from 'firebase-functions/v2/https'
-import { initializeApp } from 'firebase-admin/app'
-import { getFirestore } from 'firebase-admin/firestore'
-import { calculateCouponValidation, type CouponRecord } from './couponLogic.js'
+import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {initializeApp} from "firebase-admin/app";
+import {getFirestore} from "firebase-admin/firestore";
+import {calculateCouponValidation, type CouponRecord} from "./couponLogic.js";
 
-initializeApp()
-const db = getFirestore()
+initializeApp();
+const db = getFirestore();
 
 interface ValidateCouponRequest {
   code: string
@@ -27,40 +27,40 @@ interface ValidateCouponResponse {
  */
 export const validateCoupon = onCall<ValidateCouponRequest, Promise<ValidateCouponResponse>>(
   async (request) => {
-    const { code, subtotal } = request.data
+    const {code, subtotal} = request.data;
 
-    if (!code || typeof code !== 'string') {
-      throw new HttpsError('invalid-argument', 'কুপন কোড দিন')
+    if (!code || typeof code !== "string") {
+      throw new HttpsError("invalid-argument", "কুপন কোড দিন");
     }
-    if (typeof subtotal !== 'number' || subtotal <= 0) {
-      throw new HttpsError('invalid-argument', 'সঠিক সাবটোটাল দরকার')
+    if (typeof subtotal !== "number" || subtotal <= 0) {
+      throw new HttpsError("invalid-argument", "সঠিক সাবটোটাল দরকার");
     }
 
-    const normalizedCode = code.trim().toUpperCase()
+    const normalizedCode = code.trim().toUpperCase();
 
     const snapshot = await db
-      .collection('coupons')
-      .where('code', '==', normalizedCode)
+      .collection("coupons")
+      .where("code", "==", normalizedCode)
       .limit(1)
-      .get()
+      .get();
 
     if (snapshot.empty) {
-      return { valid: false, discountAmount: 0, error: 'কুপন কোডটি সঠিক নয়' }
+      return {valid: false, discountAmount: 0, error: "কুপন কোডটি সঠিক নয়"};
     }
 
-    const couponDoc = snapshot.docs[0]
-    const coupon = couponDoc.data()
+    const couponDoc = snapshot.docs[0];
+    const coupon = couponDoc.data();
 
-    const outcome = calculateCouponValidation(coupon as CouponRecord, subtotal)
+    const outcome = calculateCouponValidation(coupon as CouponRecord, subtotal);
 
     if (!outcome.valid) {
-      return { valid: false, discountAmount: 0, error: outcome.error }
+      return {valid: false, discountAmount: 0, error: outcome.error};
     }
 
     return {
       valid: true,
       discountAmount: outcome.discountAmount,
       couponCode: normalizedCode,
-    }
+    };
   }
-)
+);

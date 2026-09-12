@@ -7,7 +7,7 @@ import { initAnalytics } from './lib/analytics/track'
 import './index.css'
 
 initAuthListener()
-initAnalytics()
+void initAnalytics()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

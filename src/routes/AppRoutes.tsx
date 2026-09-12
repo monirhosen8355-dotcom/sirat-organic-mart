@@ -43,6 +43,7 @@ const AdminOrders = lazy(() => import('../pages/admin/Orders'))
 const AdminOrderDetail = lazy(() => import('../pages/admin/OrderDetail'))
 const Customers = lazy(() => import('../pages/admin/Customers'))
 const Coupons = lazy(() => import('../pages/admin/Coupons'))
+const MetaPixelSettings = lazy(() => import('../pages/admin/MetaPixelSettings'))
 const LegalPages = lazy(() => import('../pages/admin/LegalPages'))
 
 /**
@@ -115,7 +116,7 @@ const AppRoutes = () => {
             <Route path="/admin/orders/:id" element={<AdminOrderDetail />} />
             <Route path="/admin/customers" element={<Customers />} />
             <Route path="/admin/coupons" element={<Coupons />} />
-            <Route path="/admin/settings" element={<ComingSoon pageName="সেটিংস" />} />
+            <Route path="/admin/settings" element={<MetaPixelSettings />} />
             <Route path="/admin/legal-pages" element={<LegalPages />} />
           </Route>
         </Route>

@@ -2,12 +2,15 @@ import {
   collection,
   doc,
   getDocs,
+  query,
+  where,
+  limit,
   addDoc,
   updateDoc,
   deleteDoc,
 } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '../../lib/firebase/config'
+import { db } from '../../lib/firebase/config'
+import { calculateCouponValidation } from '../../lib/coupons/calculateCouponValidation'
 import type { Coupon } from '../../types'
 
 const COUPONS_COLLECTION = 'coupons'
@@ -62,25 +65,68 @@ export async function deleteCoupon(id: string): Promise<void> {
 }
 
 /**
- * কাস্টমার checkout-এ কুপন কোড দিলে এই ফাংশন Cloud Function
- * (validateCoupon) কল করে। ছাড়ের পরিমাণ সার্ভারে হিসাব হয়।
+ * কাস্টমার checkout-এ কুপন কোড দিলে এই ফাংশন সরাসরি Firestore থেকে coupon doc
+ * খুঁজে বের করে এবং client-side pure logic (calculateCouponValidation) দিয়ে
+ * ছাড়ের পরিমাণ হিসাব করে। আগে এই কাজ একটা Cloud Function দিয়ে হতো; Blaze
+ * billing activate না করার সিদ্ধান্তের কারণে এখন client-এ হচ্ছে।
+ *
+ * গুরুত্বপূর্ণ: Firestore rule অনুযায়ী শুধু active কুপন এই path দিয়ে পড়া যায়
+ * (`resource.data.active == true`)। এই rule-টা যাতে query-level-এ statically
+ * প্রমাণযোগ্য হয়, সেজন্য নিচের query-তেও অবশ্যই `where('active', '==', true)`
+ * থাকতে হবে — শুধু `code` দিয়ে ফিল্টার করলে Firestore rule-টা প্রমাণ করতে না
+ * পেরে পুরো query-ই permission-denied দিয়ে বাতিল করে দেয় (এমনকি valid, active
+ * কুপনের ক্ষেত্রেও)। এই where clause সরালে পুরো কুপন ফিচার আবার ভেঙে যাবে।
  */
-const validateCouponFn = httpsCallable<
-  { code: string; subtotal: number },
-  CouponValidationResult
->(functions, 'validateCoupon')
-
 export async function validateCoupon(
   code: string,
   subtotal: number
 ): Promise<CouponValidationResult> {
   try {
-    const result = await validateCouponFn({
-      code,
-      subtotal,
-    })
+    const normalizedCode = code.trim().toUpperCase()
 
-    return result.data
+    if (!normalizedCode) {
+      return {
+        valid: false,
+        discountAmount: 0,
+        error: 'কুপন কোড দিন',
+      }
+    }
+
+    const q = query(
+      collection(db, COUPONS_COLLECTION),
+      where('code', '==', normalizedCode),
+      where('active', '==', true),
+      limit(1)
+    )
+    const snapshot = await getDocs(q)
+
+    if (snapshot.empty) {
+      return {
+        valid: false,
+        discountAmount: 0,
+        error: 'কুপন কোডটি সঠিক নয়',
+      }
+    }
+
+    const couponDoc = snapshot.docs[0]
+    const coupon = { id: couponDoc.id, ...couponDoc.data() } as Coupon
+
+    const outcome = calculateCouponValidation(coupon, subtotal)
+
+    if (!outcome.valid) {
+      return {
+        valid: false,
+        discountAmount: 0,
+        error: outcome.error,
+      }
+    }
+
+    return {
+      valid: true,
+      coupon,
+      discountAmount: outcome.discountAmount,
+      couponCode: normalizedCode,
+    }
   } catch (err) {
     console.error('কুপন ভ্যালিডেশন ব্যর্থ:', err)
 

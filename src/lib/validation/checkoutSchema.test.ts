@@ -41,7 +41,8 @@ describe('checkoutSchema', () => {
   })
 
   it('deliveryNote ছাড়াও বৈধ থাকে (অপশনাল)', () => {
-    const { deliveryNote, ...withoutNote } = validData
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+const { deliveryNote, ...withoutNote } = validData
     const result = checkoutSchema.safeParse(withoutNote)
     expect(result.success).toBe(true)
   })

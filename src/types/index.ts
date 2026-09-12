@@ -151,3 +151,11 @@ export interface LegalPage {
   content: string
   updatedAt: number
 }
+
+// ---------- Site Settings ----------
+export interface MetaPixelSettings {
+  pixelId: string
+  enabled: boolean
+  updatedAt: number
+  updatedBy?: string
+}

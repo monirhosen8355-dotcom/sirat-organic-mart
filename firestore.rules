@@ -91,16 +91,16 @@ service cloud.firestore {
         (isSignedIn() && resource.data.userId == request.auth.uid);
     }
 
-    // ---------- coupons (admin-only read/write — validated server-side via a service, not public) ----------
+    // ---------- coupons (active কুপন public read, validation client-side calculateCouponValidation দিয়ে হয়; inactive/expired কুপন শুধু admin পড়তে পারবে) ----------
     match /coupons/{couponId} {
-      allow read: if isAdmin();
+      allow read: if resource.data.active == true || isAdmin();
       allow write: if isAdmin();
     }
-
-    // ---------- siteSettings (public read, admin write) ----------
+    
+    // ---------- siteSettings (admin write, optional public read for non-sensitive config) ----------
     match /siteSettings/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create, update, delete: if isAdmin();
     }
 
     // ---------- legalPages (public read, admin write) ----------

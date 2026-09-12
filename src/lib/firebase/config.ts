@@ -1,7 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import { initializeFirestore, connectFirestoreEmulator } from 'firebase/firestore'
 import { getAuth, connectAuthEmulator } from 'firebase/auth'
-import { getAnalytics, isSupported } from 'firebase/analytics'
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions'
 
 const firebaseConfig = {
@@ -46,10 +45,3 @@ if (import.meta.env.VITE_USE_FIREBASE_EMULATORS === 'true') {
   connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
   connectFunctionsEmulator(functions, '127.0.0.1', 5001)
 }
-
-export let analytics: ReturnType<typeof getAnalytics> | undefined
-isSupported().then((supported) => {
-  if (supported) {
-    analytics = getAnalytics(app)
-  }
-})

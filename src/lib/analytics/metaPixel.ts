@@ -1,5 +1,6 @@
 // Meta Pixel — Facebook-এর অফিসিয়াল বেস স্নিপেটের TypeScript ভার্সন।
-// VITE_META_PIXEL_ID না থাকলে কিছুই init হবে না (dev এ pixel ছাড়াই কাজ করা যাবে)।
+// ENV fallback ধরে রাখা হয়েছে, কিন্তু runtime-এ Firestore config-দিয়ে init করা যাবে
+// এবং duplicate initialization বন্ধ থাকবে।
 
 declare global {
   interface Window {
@@ -13,10 +14,22 @@ declare global {
   }
 }
 
-const PIXEL_ID = import.meta.env.VITE_META_PIXEL_ID as string | undefined
+const LEGACY_PIXEL_ID = (import.meta.env.VITE_META_PIXEL_ID as string | undefined)?.trim()
 
-export function initMetaPixel(): void {
-  if (!PIXEL_ID || typeof window === 'undefined' || window.fbq) return
+let metaPixelInitialized = false
+
+function normalizePixelId(pixelId?: string | null): string | null {
+  if (!pixelId) return null
+  const value = pixelId.trim()
+  return value.length > 0 ? value : null
+}
+
+export function initMetaPixel(pixelIdOverride?: string | null, enabled = true): void {
+  if (typeof window === 'undefined') return
+
+  const pixelId = normalizePixelId(pixelIdOverride) ?? normalizePixelId(LEGACY_PIXEL_ID)
+
+  if (!enabled || !pixelId || metaPixelInitialized || window.fbq) return
 
   const fbq = function (...args: unknown[]) {
     if (fbq.callMethod) {
@@ -37,13 +50,20 @@ export function initMetaPixel(): void {
   script.src = 'https://connect.facebook.net/en_US/fbevents.js'
   document.head.appendChild(script)
 
-  window.fbq('init', PIXEL_ID)
+  window.fbq('init', pixelId)
+  metaPixelInitialized = true
 }
 
 export function metaPixelPageView(): void {
-  window.fbq?.('track', 'PageView')
+  if (!metaPixelInitialized || !window.fbq) return
+  window.fbq('track', 'PageView')
 }
 
 export function metaPixelTrack(eventName: string, params?: Record<string, unknown>): void {
-  window.fbq?.('track', eventName, params)
+  if (!metaPixelInitialized || !window.fbq) return
+  window.fbq('track', eventName, params)
+}
+
+export function resetMetaPixelInitializationForTesting(): void {
+  metaPixelInitialized = false
 }

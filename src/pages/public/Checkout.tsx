@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import CheckoutForm from '../../components/checkout/CheckoutForm'
@@ -20,6 +20,13 @@ const Checkout = () => {
   const [discount, setDiscount] = useState(0)
   const [appliedCouponCode, setAppliedCouponCode] = useState<string | null>(null)
 
+  // অর্ডার সফল হওয়ার পর clearCart() কল করা হয়, তখনও items.length === 0
+  // হয়ে যায় — কিন্তু তখন এই রিডাইরেক্ট ফায়ার করা উচিত না (নইলে
+  // /order-confirmation-এর বদলে /cart-এ চলে যাওয়ার race তৈরি হয়)। state
+  // ব্যবহার করা হচ্ছে (ref না) কারণ render-এর সময় এই ভ্যালু পড়তে হয়,
+  // আর ref.current render-time-এ পড়া React-এর নিয়মে নিষিদ্ধ।
+  const [orderPlaced, setOrderPlaced] = useState(false)
+
   const handleCouponApplied = (
     newDiscount: number,
     code: string | null
@@ -39,21 +46,13 @@ const Checkout = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // কার্ট খালি হলে চেকআউটে কিছু করার নেই — কার্টে ফেরত পাঠাই।
-  // ব্যতিক্রম: অর্ডার সফল হওয়ার পর clearCart() কল করা হয়, তখনও items.length
-  // === 0 হয়ে যায় — কিন্তু তখন এই রিডাইরেক্ট ফায়ার করা উচিত না (নইলে
-  // /order-confirmation-এর বদলে /cart-এ চলে যাওয়ার race তৈরি হয়)। তাই
-  // orderPlacedRef একটা explicit flag হিসেবে ব্যবহার করা হচ্ছে — timing/commit
-  // order-এর উপর নির্ভর না করে নিশ্চিতভাবে এই কেসটা বাদ দেওয়ার জন্য।
-  const orderPlacedRef = useRef(false)
-
   useEffect(() => {
-    if (items.length === 0 && !orderPlacedRef.current) {
+    if (items.length === 0 && !orderPlaced) {
       navigate('/cart', { replace: true })
     }
-  }, [items.length, navigate])
+  }, [items.length, orderPlaced, navigate])
 
-  if (items.length === 0 && !orderPlacedRef.current) {
+  if (items.length === 0 && !orderPlaced) {
     return null
   }
 
@@ -85,7 +84,7 @@ const Checkout = () => {
         paymentMethod: 'cod',
       })
 
-      orderPlacedRef.current = true
+      setOrderPlaced(true)
       navigate(`/order-confirmation/${orderId}`)
       clearCart()
     } catch (error) {

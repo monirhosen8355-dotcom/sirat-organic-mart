@@ -7,9 +7,9 @@ import {
   ShoppingBag,
   Users,
   Ticket,
-  Settings,
   FileText,
   LogOut,
+  Radio,
 } from 'lucide-react'
 import { auth } from '../lib/firebase/config'
 
@@ -20,8 +20,8 @@ const navItems = [
   { to: '/admin/orders', label: 'অর্ডার', icon: ShoppingBag },
   { to: '/admin/customers', label: 'কাস্টমার', icon: Users },
   { to: '/admin/coupons', label: 'কুপন', icon: Ticket },
+  { to: '/admin/settings', label: 'Meta Pixel', icon: Radio },
   { to: '/admin/legal-pages', label: 'লিগ্যাল পেজ', icon: FileText },
-  { to: '/admin/settings', label: 'সেটিংস', icon: Settings },
 ]
 
 const AdminLayout = () => {
