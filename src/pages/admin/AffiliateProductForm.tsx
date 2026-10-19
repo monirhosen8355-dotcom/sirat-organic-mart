@@ -408,6 +408,27 @@ const AffiliateProductForm = () => {
               hint="For example USD or BDT"
               disabled={isSaving}
             />
+            <div>
+              <Input
+                label="Image URL"
+                type="url"
+                value={form.images[0] ?? ''}
+                onChange={(event) => setForm((current) => ({
+                  ...current,
+                  images: event.target.value
+                    ? [event.target.value, ...current.images.slice(1)]
+                    : current.images.slice(1),
+                }))}
+                disabled={isSaving}
+              />
+              {form.images[0] && (
+                <img
+                  src={form.images[0]}
+                  alt="Product image preview"
+                  className="mt-2 h-16 w-16 rounded-lg border border-gray-200 object-cover"
+                />
+              )}
+            </div>
             <Input
               label="Short description"
               value={form.shortDescription}
