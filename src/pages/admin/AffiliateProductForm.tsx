@@ -160,8 +160,8 @@ const AffiliateProductForm = () => {
           ? result.description.slice(0, 180)
           : current.shortDescription,
         fullDescription: result.description || current.fullDescription,
-        price: result.price === undefined ? current.price : String(result.price),
-        priceCurrency: result.currency ?? current.priceCurrency,
+        price: result.price === undefined ? '' : String(result.price),
+        priceCurrency: result.currency ?? (result.price === undefined ? '' : current.priceCurrency),
         affiliateUrl: previewUrl,
       }))
 

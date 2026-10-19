@@ -28,11 +28,14 @@ export type PreviewErrorCode =
   | "no-data";
 
 export class LinkPreviewError extends Error {
+  public readonly code: PreviewErrorCode;
+
   constructor(
-    public readonly code: PreviewErrorCode,
+    code: PreviewErrorCode,
     message: string,
   ) {
     super(message);
+    this.code = code;
     this.name = "LinkPreviewError";
   }
 }
@@ -200,7 +203,7 @@ function requestHtml(
     path: `${url.pathname}${url.search}`,
     method: "GET",
     headers: {
-      "User-Agent": "Mozilla/5.0 (compatible; ShoplexLinkPreview/1.0)",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
       "Accept": "text/html",
       "Accept-Language": "en-US,en;q=0.9",
     },

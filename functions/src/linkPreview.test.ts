@@ -81,4 +81,18 @@ describe("link preview parsing", () => {
     expect(parseLinkPreview(html, "https://shop.example/product").price).toBe(1299);
     expect(parseLinkPreview(html, "https://shop.example/product").currency).toBe("BDT");
   });
+
+  it("returns the other preview fields when the page has no price", () => {
+    const preview = parseLinkPreview(
+      '<meta property="og:title" content="Product"><meta property="og:image" content="/product.jpg">',
+      "https://shop.example/product",
+    );
+
+    expect(preview).toMatchObject({
+      title: "Product",
+      imageUrl: "https://shop.example/product.jpg",
+      finalUrl: "https://shop.example/product",
+    });
+    expect(preview.price).toBeUndefined();
+  });
 });
