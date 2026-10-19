@@ -402,7 +402,17 @@ export async function fetchLinkPreview(input: string): Promise<LinkPreview> {
       throw new LinkPreviewError("fetch-failed", "The product URL did not return an HTML page.");
     }
 
-    return parseLinkPreview(response.body.toString("utf8"), url.toString());
+    const html = response.body.toString("utf8");
+    const title = html.match(/<title\b[^>]*>([\s\S]*?)<\/title\s*>/i)?.[1] ?? "";
+    console.log({
+      status: response.statusCode,
+      contentType: response.headers["content-type"] ?? null,
+      htmlLength: html.length,
+      containsOgTitle: html.includes("og:title"),
+      title: title.slice(0, 150),
+    });
+
+    return parseLinkPreview(html, url.toString());
   }
 
   throw new LinkPreviewError("fetch-failed", "The product page redirected too many times.");
