@@ -1,17 +1,34 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import { Leaf, Truck, ShieldCheck } from 'lucide-react'
-import { getFeaturedProducts } from '../../services/products/productService'
+import { Leaf } from 'lucide-react'
+import {
+  getFeaturedProducts,
+  getProductsByCategoryForHome,
+} from '../../services/products/productService'
 import { getActiveCategories } from '../../services/categories/categoryService'
-import type { Product, Category } from '../../types'
+import { getActiveBannersByPlacement } from '../../services/banners/bannerService'
+import type { Product, Category, HomeBanner } from '../../types'
 import ProductCard from '../../components/product/ProductCard'
-import Spinner from '../../components/common/Spinner'
-import Card from '../../components/common/Card'
+import HeroBannerCarousel from '../../components/home/HeroBannerCarousel'
+import { useWishlist } from '../../lib/wishlist/useWishlist'
+import PromoBannerGrid from '../../components/home/PromoBannerGrid'
+import PromoBannerStrip from '../../components/home/PromoBannerStrip'
+import { HomePageSkeleton } from '../../components/common/Skeleton'
+
+interface CategorySection {
+  category: Category
+  products: Product[]
+}
 
 const Home = () => {
+  const { wishlist } = useWishlist()
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [heroBanners, setHeroBanners] = useState<HomeBanner[]>([])
+  const [middleBanners, setMiddleBanners] = useState<HomeBanner[]>([])
+  const [tripleBanners, setTripleBanners] = useState<HomeBanner[]>([])
+  const [categorySections, setCategorySections] = useState<CategorySection[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -20,17 +37,36 @@ const Home = () => {
 
     async function loadHomeData() {
       try {
-        const [products, cats] = await Promise.all([
+        const [products, allCategories, hero, middle, triple] = await Promise.all([
           getFeaturedProducts(8),
           getActiveCategories(),
+          getActiveBannersByPlacement('hero'),
+          getActiveBannersByPlacement('middle'),
+          getActiveBannersByPlacement('triple'),
         ])
+
+        const homepageCategories = [...allCategories]
+          .filter((cat) => cat.active && cat.showOnHomepage)
+          .sort((a, b) => (a.homeOrder ?? 0) - (b.homeOrder ?? 0))
+
+        const sectionData = await Promise.all(
+          homepageCategories.map(async (category) => ({
+            category,
+            products: await getProductsByCategoryForHome(category.id, 4),
+          }))
+        )
+
         if (!cancelled) {
           setFeaturedProducts(products)
-          setCategories(cats)
+          setCategories(allCategories.filter((cat) => cat.active))
+          setHeroBanners(hero)
+          setMiddleBanners(middle)
+          setTripleBanners(triple)
+          setCategorySections(sectionData.filter((item) => item.products.length > 0))
         }
       } catch (err) {
         if (!cancelled) {
-          setError('পণ্য লোড করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।')
+          setError('There was a problem loading the products. Please try again.')
           console.error(err)
         }
       } finally {
@@ -44,59 +80,62 @@ const Home = () => {
     }
   }, [])
 
+  const sortedFeaturedProducts = [...featuredProducts].sort(
+    (a, b) => Number(wishlist.includes(b.id)) - Number(wishlist.includes(a.id))
+  )
+
   return (
     <>
       <Helmet>
-        <title>Sirat Organic Mart — প্রাকৃতিক ও অর্গানিক পণ্যের অনলাইন স্টোর</title>
+        <title>Shoplexᴮᴰ — Natural and Organic Products Online</title>
         <meta
           name="description"
-          content="Sirat Organic Mart — প্রাকৃতিক ও অর্গানিক পণ্যের বিশ্বস্ত অনলাইন স্টোর। ক্যাশ অন ডেলিভারিতে সহজে অর্ডার করুন।"
+          content="Shoplexᴮᴰ — a trusted online store for natural and organic products. Shop easily with cash on delivery."
         />
-        <meta property="og:title" content="Sirat Organic Mart" />
+        <meta property="og:title" content="Shoplexᴮᴰ" />
         <meta
           property="og:description"
-          content="প্রাকৃতিক ও অর্গানিক পণ্যের বিশ্বস্ত অনলাইন স্টোর।"
+          content="A trusted online store for natural and organic products."
         />
       </Helmet>
 
-      {/* Hero */}
-      <section className="bg-[color:var(--color-natural-bg)] px-4 py-12 text-center md:py-20">
-        <h1 className="mx-auto mb-4 max-w-2xl text-2xl font-bold text-[color:var(--color-deep-green)] md:text-4xl">
-          প্রাকৃতিক ও অর্গানিক পণ্য, সরাসরি আপনার দরজায়
-        </h1>
-        <p className="mx-auto mb-6 max-w-xl text-[color:var(--color-text-secondary)]">
-          ক্যাশ অন ডেলিভারিতে সহজে অর্ডার করুন — বিশ্বস্ততা ও মান আমাদের অগ্রাধিকার
-        </p>
-        <Link
-          to="/shop"
-          className="inline-flex h-11 items-center justify-center rounded-lg bg-[color:var(--color-emerald)] px-6 font-medium text-white hover:bg-[color:var(--color-deep-green)]"
-        >
-          এখনই কেনাকাটা করুন
-        </Link>
-      </section>
+      {/* Hero Banner — admin panel থেকে ব্যানার সেট করা থাকলেই শুধু দেখাবে, না থাকলে কিছুই render হবে না */}
+      {heroBanners.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 pt-4 md:pt-6">
+          <HeroBannerCarousel banners={heroBanners} />
+        </section>
+      )}
 
       {/* Categories */}
       {categories.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 py-10">
-          <h2 className="mb-4 text-lg font-semibold text-[color:var(--color-deep-green)]">
-            ক্যাটাগরি
-          </h2>
+        <section className="mx-auto max-w-7xl px-4 pt-6 pb-2">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold text-[color:var(--color-deep-green)]">
+              Categories
+            </h2>
+            <Link
+              to="/shop"
+              className="text-sm font-medium text-[color:var(--color-emerald)] hover:text-[color:var(--color-deep-green)]"
+            >
+              View all
+            </Link>
+          </div>
           <div className="flex gap-3 overflow-x-auto pb-2">
             {categories.map((cat) => (
               <Link
                 key={cat.id}
                 to={`/category/${cat.slug}`}
-                className="flex min-w-[110px] flex-col items-center gap-2 rounded-xl border border-gray-200 bg-white p-3 hover:border-[color:var(--color-emerald)]"
+                className="flex min-w-[90px] flex-col items-center gap-2"
               >
                 {cat.imageUrl ? (
                   <img
                     src={cat.imageUrl}
                     alt={cat.name}
                     loading="lazy"
-                    className="h-14 w-14 rounded-full object-cover"
+                    className="h-16 w-16 rounded-full object-cover shadow-sm"
                   />
                 ) : (
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[color:var(--color-natural-bg)]">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[color:var(--color-natural-bg)] shadow-sm">
                     <Leaf className="h-6 w-6 text-[color:var(--color-emerald)]" />
                   </div>
                 )}
@@ -107,66 +146,69 @@ const Home = () => {
         </section>
       )}
 
-      {/* Featured Products */}
-      <section className="mx-auto max-w-7xl px-4 py-6">
+      {middleBanners.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-8">
+          <PromoBannerGrid banners={middleBanners} />
+        </section>
+      )}
+
+      {/* Featured products */}
+      <section className="mx-auto max-w-7xl px-4 pt-2 pb-6">
         <h2 className="mb-4 text-lg font-semibold text-[color:var(--color-deep-green)]">
-          বৈশিষ্ট্যযুক্ত পণ্য
+          Featured products
         </h2>
 
-        {isLoading && (
-          <div className="flex justify-center py-12">
-            <Spinner size="lg" />
-          </div>
-        )}
+        {isLoading && <HomePageSkeleton />}
 
         {!isLoading && error && (
           <p className="py-12 text-center text-red-600">{error}</p>
         )}
 
-        {!isLoading && !error && featuredProducts.length === 0 && (
+        {!isLoading && !error && sortedFeaturedProducts.length === 0 && (
           <p className="py-12 text-center text-[color:var(--color-text-secondary)]">
-            কোনো পণ্য পাওয়া যায়নি।
+            No products found.
           </p>
         )}
 
-        {!isLoading && !error && featuredProducts.length > 0 && (
+        {!isLoading && !error && sortedFeaturedProducts.length > 0 && (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-            {featuredProducts.map((product) => (
+            {sortedFeaturedProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
         )}
       </section>
 
-      {/* Why choose us */}
-      <section className="mx-auto max-w-7xl px-4 py-10">
-        <h2 className="mb-4 text-lg font-semibold text-[color:var(--color-deep-green)]">
-          কেন Sirat Organic Mart বেছে নেবেন
-        </h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <Card className="flex flex-col items-center text-center">
-            <Leaf className="mb-2 h-8 w-8 text-[color:var(--color-emerald)]" />
-            <h3 className="mb-1 font-medium">১০০% প্রাকৃতিক</h3>
-            <p className="text-sm text-[color:var(--color-text-secondary)]">
-              সরাসরি বিশ্বস্ত উৎস থেকে সংগ্রহ করা।
-            </p>
-          </Card>
-          <Card className="flex flex-col items-center text-center">
-            <Truck className="mb-2 h-8 w-8 text-[color:var(--color-emerald)]" />
-            <h3 className="mb-1 font-medium">দ্রুত ডেলিভারি</h3>
-            <p className="text-sm text-[color:var(--color-text-secondary)]">
-              ক্যাশ অন ডেলিভারিতে ঝামেলাহীন অর্ডার।
-            </p>
-          </Card>
-          <Card className="flex flex-col items-center text-center">
-            <ShieldCheck className="mb-2 h-8 w-8 text-[color:var(--color-emerald)]" />
-            <h3 className="mb-1 font-medium">মান নিশ্চিতকরণ</h3>
-            <p className="text-sm text-[color:var(--color-text-secondary)]">
-              প্রতিটা পণ্য যাচাই করে পাঠানো হয়।
-            </p>
-          </Card>
-        </div>
-      </section>
+      {tripleBanners.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-8">
+          <PromoBannerStrip banners={tripleBanners} />
+        </section>
+      )}
+
+      {categorySections.length > 0 &&
+        categorySections.map(({ category, products }) => (
+          <section key={category.id} className="mx-auto max-w-7xl px-4 py-8">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold text-[color:var(--color-deep-green)]">
+                {category.name}
+              </h2>
+              <Link
+                to={`/category/${category.slug}`}
+                className="text-sm font-medium text-[color:var(--color-emerald)] hover:text-[color:var(--color-deep-green)]"
+              >
+                View all
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+              {products.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          </section>
+        ))}
+        <p className="mt-8 mb-2 text-center text-sm font-medium text-[color:var(--color-deep-green)]">
+  🏷️ Use code <strong>SIRAT420</strong> to get up to 10% off
+</p>
     </>
   )
 }

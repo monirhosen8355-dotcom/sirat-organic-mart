@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { getRelatedProducts } from '../../services/products/productService'
 import type { Product } from '../../types'
 import ProductCard from './ProductCard'
-import Spinner from '../common/Spinner'
+import { ProductGridSkeleton } from '../common/Skeleton'
 
 interface RelatedProductsProps {
   categoryId: string
@@ -33,8 +33,11 @@ const RelatedProducts = ({ categoryId, currentProductId }: RelatedProductsProps)
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-8">
-        <Spinner size="md" />
+      <div className="mt-10 border-t border-gray-200 pt-8">
+        <h2 className="mb-4 text-lg font-semibold text-[color:var(--color-deep-green)]">
+          সম্পর্কিত পণ্য
+        </h2>
+        <ProductGridSkeleton count={4} />
       </div>
     )
   }

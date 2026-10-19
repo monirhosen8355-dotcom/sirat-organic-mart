@@ -42,7 +42,7 @@ const CartItem = ({ item }: CartItemProps) => {
           />
           <button
             onClick={() => removeItem(item.productId, item.variantId)}
-            aria-label="সরান"
+            aria-label="Remove"
             className="p-2 text-red-500 hover:text-red-700"
           >
             <Trash2 className="h-4 w-4" />

@@ -14,19 +14,19 @@ const Cart = () => {
   return (
     <>
       <Helmet>
-        <title>কার্ট — Sirat Organic Mart</title>
+        <title>Cart — Shoplexᴮᴰ</title>
       </Helmet>
 
       <div className="mx-auto max-w-5xl px-4 py-6">
         <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-[color:var(--color-deep-green)]">কার্ট</h1>
+          <h1 className="text-xl font-semibold text-[color:var(--color-deep-green)]">Cart</h1>
           {items.length > 0 && (
             <button
               onClick={clearCart}
               className="flex items-center gap-1 text-sm text-red-500 hover:text-red-700"
             >
               <Trash2 className="h-4 w-4" />
-              কার্ট খালি করুন
+              Clear cart
             </button>
           )}
         </div>
@@ -35,10 +35,10 @@ const Cart = () => {
           <div className="flex flex-col items-center gap-4 py-16 text-center">
             <ShoppingBag className="h-14 w-14 text-[color:var(--color-text-secondary)] opacity-40" />
             <p className="text-[color:var(--color-text-secondary)]">
-              আপনার কার্ট এখনো খালি।
+              Your cart is currently empty.
             </p>
             <Link to="/shop">
-              <Button>কেনাকাটা শুরু করুন</Button>
+              <Button>Start shopping</Button>
             </Link>
           </div>
         ) : (

@@ -168,6 +168,122 @@ describe('admins collection (never client-writable)', () => {
   })
 })
 
+describe('customer support', () => {
+  const conversation = {
+    customerId: 'customerA',
+    customerName: 'Customer A',
+    customerEmail: 'a@example.com',
+    lastMessage: '',
+    lastMessageAt: 100,
+    unreadForAdmin: false,
+    unreadForCustomer: false,
+    createdAt: 100,
+    updatedAt: 100,
+  }
+
+  it('public users can read FAQs but cannot write them', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'supportFAQs/faq1'), {
+        question: 'How long does delivery take?',
+        answer: 'Usually within two days.',
+        active: true,
+        order: 1,
+      })
+    })
+
+    const guestDb = testEnv.unauthenticatedContext().firestore()
+    await assertSucceeds(getDoc(doc(guestDb, 'supportFAQs/faq1')))
+    await assertFails(setDoc(doc(guestDb, 'supportFAQs/faq2'), { question: 'Hack' }))
+  })
+
+  it('customer can access only their own conversation', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'supportConversations/customerA'), conversation)
+    })
+
+    const customerADb = testEnv.authenticatedContext('customerA').firestore()
+    const customerBDb = testEnv.authenticatedContext('customerB').firestore()
+    await assertSucceeds(getDoc(doc(customerADb, 'supportConversations/customerA')))
+    await assertFails(getDoc(doc(customerBDb, 'supportConversations/customerA')))
+    await assertFails(
+      setDoc(doc(customerBDb, 'supportConversations/customerA'), {
+        ...conversation,
+        customerId: 'customerB',
+      })
+    )
+  })
+
+  it('customer can create a conversation only under their own UID', async () => {
+    const customerDb = testEnv.authenticatedContext('customerA').firestore()
+    await assertSucceeds(getDoc(doc(customerDb, 'supportConversations/customerA')))
+    await assertSucceeds(
+      setDoc(doc(customerDb, 'supportConversations/customerA'), conversation)
+    )
+    await assertFails(
+      setDoc(doc(customerDb, 'supportConversations/customerB'), {
+        ...conversation,
+        customerId: 'customerA',
+      })
+    )
+  })
+
+  it('customer messages are isolated and immutable to customers', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'supportConversations/customerA'), conversation)
+    })
+
+    const customerADb = testEnv.authenticatedContext('customerA').firestore()
+    const customerBDb = testEnv.authenticatedContext('customerB').firestore()
+    const message = {
+      conversationId: 'customerA',
+      senderId: 'customerA',
+      senderRole: 'customer',
+      text: 'Can you help me?',
+      createdAt: 200,
+    }
+
+    await assertSucceeds(
+      setDoc(doc(customerADb, 'supportConversations/customerA/messages/m1'), message)
+    )
+    await assertSucceeds(
+      getDoc(doc(customerADb, 'supportConversations/customerA/messages/m1'))
+    )
+    await assertFails(
+      getDoc(doc(customerBDb, 'supportConversations/customerA/messages/m1'))
+    )
+    await assertFails(
+      updateDoc(doc(customerADb, 'supportConversations/customerA/messages/m1'), {
+        text: 'Changed',
+      })
+    )
+  })
+
+  it('admin can read conversations and send replies', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'admins/admin1'), { role: 'admin' })
+      await setDoc(doc(ctx.firestore(), 'supportConversations/customerA'), conversation)
+    })
+
+    const adminDb = testEnv.authenticatedContext('admin1').firestore()
+    await assertSucceeds(getDoc(doc(adminDb, 'supportConversations/customerA')))
+    await assertSucceeds(
+      setDoc(doc(adminDb, 'supportConversations/customerA/messages/admin1'), {
+        conversationId: 'customerA',
+        senderId: 'admin1',
+        senderRole: 'admin',
+        text: 'How can we help?',
+        createdAt: 300,
+      })
+    )
+    await assertSucceeds(
+      updateDoc(doc(adminDb, 'supportConversations/customerA'), {
+        lastMessage: 'How can we help?',
+        unreadForCustomer: true,
+      })
+    )
+  })
+})
+
 describe('unauthenticated user reaching admin-only writes generally', () => {
   it('unauthenticated ইউজার categories লিখতে পারে না', async () => {
     const guestDb = testEnv.unauthenticatedContext().firestore()

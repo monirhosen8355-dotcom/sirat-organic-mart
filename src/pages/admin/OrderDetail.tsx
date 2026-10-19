@@ -4,23 +4,25 @@ import { Helmet } from 'react-helmet-async'
 import toast from 'react-hot-toast'
 import { ArrowLeft } from 'lucide-react'
 import {
+  calculateOrderTotal,
   getOrderById,
   getOrderStatusHistory,
+  updateOrderDeliveryCharge,
   updateOrderStatus,
 } from '../../services/orders/orderService'
 import type { Order, OrderStatus, OrderStatusHistoryEntry } from '../../types'
 import Card from '../../components/common/Card'
 import Button from '../../components/common/Button'
-import Spinner from '../../components/common/Spinner'
+import { OrderDetailSkeleton } from '../../components/common/Skeleton'
 import OrderStatusBadge from '../../components/common/OrderStatusBadge'
 
 const STATUS_OPTIONS: { label: string; value: OrderStatus }[] = [
-  { label: 'অপেক্ষমাণ', value: 'pending' },
-  { label: 'কনফার্ম হয়েছে', value: 'confirmed' },
-  { label: 'প্রসেসিং হচ্ছে', value: 'processing' },
-  { label: 'পাঠানো হয়েছে', value: 'shipped' },
-  { label: 'ডেলিভার হয়েছে', value: 'delivered' },
-  { label: 'বাতিল হয়েছে', value: 'cancelled' },
+  { label: 'Pending', value: 'pending' },
+  { label: 'Confirmed', value: 'confirmed' },
+  { label: 'Processing', value: 'processing' },
+  { label: 'Shipped', value: 'shipped' },
+  { label: 'Delivered', value: 'delivered' },
+  { label: 'Cancelled', value: 'cancelled' },
 ]
 
 const OrderDetail = () => {
@@ -32,7 +34,9 @@ const OrderDetail = () => {
   const [error, setError] = useState<string | null>(null)
   const [nextStatus, setNextStatus] = useState<OrderStatus>('pending')
   const [statusNote, setStatusNote] = useState('')
+  const [deliveryChargeInput, setDeliveryChargeInput] = useState('0')
   const [isUpdating, setIsUpdating] = useState(false)
+  const [isSavingDeliveryCharge, setIsSavingDeliveryCharge] = useState(false)
 
   async function loadOrder() {
     if (!id) return
@@ -44,14 +48,15 @@ const OrderDetail = () => {
         getOrderStatusHistory(id),
       ])
       if (!orderData) {
-        setError('অর্ডার পাওয়া যায়নি।')
+        setError('Order not found.')
         return
       }
       setOrder(orderData)
       setHistory(historyData)
       setNextStatus(orderData.status)
+      setDeliveryChargeInput(String(orderData.deliveryCharge))
     } catch (err) {
-      setError('অর্ডার লোড করতে সমস্যা হয়েছে।')
+      setError('There was a problem loading the order.')
       console.error(err)
     } finally {
       setIsLoading(false)
@@ -66,30 +71,59 @@ const OrderDetail = () => {
   async function handleStatusUpdate() {
     if (!id || !order) return
     if (nextStatus === order.status) {
-      toast.error('নতুন স্ট্যাটাস বর্তমান স্ট্যাটাসের মতোই।')
+      toast.error('The selected status is the same as the current one.')
       return
     }
 
     setIsUpdating(true)
     try {
       await updateOrderStatus(id, nextStatus, statusNote.trim() || undefined)
-      toast.success('অর্ডার স্ট্যাটাস আপডেট হয়েছে।')
+      toast.success('Order status updated successfully.')
       setStatusNote('')
       await loadOrder()
     } catch (err) {
-      toast.error('স্ট্যাটাস আপডেট করতে সমস্যা হয়েছে।')
+      toast.error('There was a problem updating the status.')
       console.error(err)
     } finally {
       setIsUpdating(false)
     }
   }
 
+  async function handleDeliveryChargeUpdate() {
+    if (!id || !order) return
+
+    const nextCharge = Number(deliveryChargeInput)
+    if (!Number.isFinite(nextCharge) || nextCharge < 0) {
+      toast.error('Delivery charge must be a non-negative number.')
+      return
+    }
+
+    if (nextCharge === order.deliveryCharge) {
+      toast.error('The delivery charge is already this amount.')
+      return
+    }
+
+    setIsSavingDeliveryCharge(true)
+    try {
+      await updateOrderDeliveryCharge(id, nextCharge)
+      const updatedOrder = {
+        ...order,
+        deliveryCharge: nextCharge,
+        total: calculateOrderTotal(order.subtotal, nextCharge, order.discount),
+      }
+      setOrder(updatedOrder)
+      setDeliveryChargeInput(String(nextCharge))
+      toast.success('Delivery charge updated successfully.')
+    } catch (err) {
+      toast.error('There was a problem updating the delivery charge.')
+      console.error(err)
+    } finally {
+      setIsSavingDeliveryCharge(false)
+    }
+  }
+
   if (isLoading) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Spinner size="lg" />
-      </div>
-    )
+    return <OrderDetailSkeleton />
   }
 
   if (error || !order) {
@@ -99,7 +133,7 @@ const OrderDetail = () => {
   return (
     <>
       <Helmet>
-        <title>অর্ডার #{order.id.slice(-8).toUpperCase()} — Admin — Sirat Organic Mart</title>
+        <title>Order #{order.id.slice(-8).toUpperCase()} — Admin — Shoplexᴮᴰ</title>
       </Helmet>
 
       <Link
@@ -107,12 +141,12 @@ const OrderDetail = () => {
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-[color:var(--color-text-secondary)] hover:text-black"
       >
         <ArrowLeft className="h-4 w-4" />
-        অর্ডার লিস্টে ফিরুন
+        Back to orders
       </Link>
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold text-[color:var(--color-deep-green)]">
-          অর্ডার #{order.id.slice(-8).toUpperCase()}
+          Order #{order.id.slice(-8).toUpperCase()}
         </h1>
         <OrderStatusBadge status={order.status} />
       </div>
@@ -120,35 +154,35 @@ const OrderDetail = () => {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="flex flex-col gap-6 lg:col-span-2">
           <Card>
-            <h2 className="mb-3 font-medium">কাস্টমার তথ্য</h2>
+            <h2 className="mb-3 font-medium">Customer information</h2>
             <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
               <div>
-                <dt className="text-[color:var(--color-text-secondary)]">নাম</dt>
+                <dt className="text-[color:var(--color-text-secondary)]">Name</dt>
                 <dd>{order.customerName}</dd>
               </div>
               <div>
-                <dt className="text-[color:var(--color-text-secondary)]">ফোন</dt>
+                <dt className="text-[color:var(--color-text-secondary)]">Phone</dt>
                 <dd>{order.customerPhone}</dd>
               </div>
               <div className="sm:col-span-2">
-                <dt className="text-[color:var(--color-text-secondary)]">ঠিকানা</dt>
+                <dt className="text-[color:var(--color-text-secondary)]">Address</dt>
                 <dd>{order.deliveryAddress}</dd>
               </div>
               {order.deliveryNote && (
                 <div className="sm:col-span-2">
-                  <dt className="text-[color:var(--color-text-secondary)]">নোট</dt>
+                  <dt className="text-[color:var(--color-text-secondary)]">Note</dt>
                   <dd>{order.deliveryNote}</dd>
                 </div>
               )}
               <div>
-                <dt className="text-[color:var(--color-text-secondary)]">পেমেন্ট মেথড</dt>
-                <dd>ক্যাশ অন ডেলিভারি</dd>
+                <dt className="text-[color:var(--color-text-secondary)]">Payment method</dt>
+                <dd>Cash on delivery</dd>
               </div>
             </dl>
           </Card>
 
           <Card>
-            <h2 className="mb-3 font-medium">প্রোডাক্ট</h2>
+            <h2 className="mb-3 font-medium">Products</h2>
             <div className="flex flex-col divide-y divide-gray-100">
               {order.items.map((item, index) => (
                 <div key={`${item.productId}-${index}`} className="flex gap-3 py-3">
@@ -176,28 +210,47 @@ const OrderDetail = () => {
 
             <div className="mt-4 flex flex-col gap-1.5 border-t border-gray-100 pt-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-[color:var(--color-text-secondary)]">সাবটোটাল</span>
+                <span className="text-[color:var(--color-text-secondary)]">Subtotal</span>
                 <span>৳{order.subtotal}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-[color:var(--color-text-secondary)]">ডেলিভারি চার্জ</span>
-                <span>৳{order.deliveryCharge}</span>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[color:var(--color-text-secondary)]">Delivery charge</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={deliveryChargeInput}
+                    onChange={(e) => setDeliveryChargeInput(e.target.value)}
+                    disabled={isSavingDeliveryCharge}
+                    className="h-9 w-24 rounded-lg border border-gray-300 bg-white px-2 text-right text-sm focus:border-[color:var(--color-emerald)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-emerald)]"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleDeliveryChargeUpdate}
+                    isLoading={isSavingDeliveryCharge}
+                    disabled={isUpdating}
+                  >
+                    Save
+                  </Button>
+                </div>
               </div>
               {order.discount > 0 && (
                 <div className="flex justify-between text-emerald-700">
-                  <span>ছাড় {order.couponCode ? `(${order.couponCode})` : ''}</span>
+                  <span>Discount {order.couponCode ? `(${order.couponCode})` : ''}</span>
                   <span>-৳{order.discount}</span>
                 </div>
               )}
               <div className="mt-1 flex justify-between border-t border-gray-100 pt-2 text-base font-semibold">
-                <span>মোট</span>
+                <span>Total</span>
                 <span>৳{order.total}</span>
               </div>
             </div>
           </Card>
 
           <Card>
-            <h2 className="mb-3 font-medium">স্ট্যাটাস হিস্টরি</h2>
+            <h2 className="mb-3 font-medium">Status history</h2>
             <div className="flex flex-col gap-3">
               {history.map((entry, index) => (
                 <div key={index} className="flex gap-3">
@@ -222,7 +275,7 @@ const OrderDetail = () => {
         </div>
 
         <Card className="flex h-fit flex-col gap-3">
-          <h2 className="font-medium">স্ট্যাটাস পরিবর্তন করুন</h2>
+          <h2 className="font-medium">Update status</h2>
 
           <select
             value={nextStatus}

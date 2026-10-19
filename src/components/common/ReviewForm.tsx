@@ -16,11 +16,11 @@ const ReviewForm = ({ onSubmit }: ReviewFormProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (rating === 0) {
-      toast.error('একটা রেটিং দিন')
+      toast.error('Please select a rating')
       return
     }
     if (!comment.trim()) {
-      toast.error('একটা মন্তব্য লিখুন')
+      toast.error('Please write a comment')
       return
     }
 
@@ -29,10 +29,10 @@ const ReviewForm = ({ onSubmit }: ReviewFormProps) => {
       await onSubmit(rating, comment.trim())
       setRating(0)
       setComment('')
-      toast.success('রিভিউ জমা দেওয়া হয়েছে, অনুমোদনের অপেক্ষায় আছে')
+      toast.success('Your review has been submitted and is awaiting approval')
     } catch (err) {
       console.error(err)
-      toast.error('রিভিউ জমা দিতে সমস্যা হয়েছে')
+      toast.error('There was a problem submitting the review')
     } finally {
       setIsSubmitting(false)
     }
@@ -41,7 +41,7 @@ const ReviewForm = ({ onSubmit }: ReviewFormProps) => {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded-xl border border-gray-200 p-4">
       <div>
-        <span className="mb-1.5 block text-sm font-medium">রেটিং</span>
+        <span className="mb-1.5 block text-sm font-medium">Rating</span>
         <div className="flex gap-1">
           {Array.from({ length: 5 }).map((_, i) => {
             const value = i + 1
@@ -52,7 +52,7 @@ const ReviewForm = ({ onSubmit }: ReviewFormProps) => {
                 onClick={() => setRating(value)}
                 onMouseEnter={() => setHoverRating(value)}
                 onMouseLeave={() => setHoverRating(0)}
-                aria-label={`${value} স্টার দিন`}
+                aria-label={`Rate ${value} stars`}
               >
                 <Star
                   className={[
@@ -70,20 +70,20 @@ const ReviewForm = ({ onSubmit }: ReviewFormProps) => {
 
       <div>
         <label htmlFor="review-comment" className="mb-1.5 block text-sm font-medium">
-          মন্তব্য
+          Comment
         </label>
         <textarea
           id="review-comment"
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           rows={3}
-          placeholder="পণ্যটি সম্পর্কে আপনার অভিজ্ঞতা লিখুন..."
+          placeholder="Tell us about your experience with this product..."
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[color:var(--color-emerald)] focus:outline-none focus:ring-1 focus:ring-[color:var(--color-emerald)]"
         />
       </div>
 
       <Button type="submit" isLoading={isSubmitting} className="self-start">
-        রিভিউ জমা দিন
+        Submit review
       </Button>
     </form>
   )

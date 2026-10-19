@@ -7,12 +7,12 @@ interface OrderStatusBadgeProps {
 }
 
 const statusConfig: Record<OrderStatus, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
-  pending: { label: 'অপেক্ষমাণ', variant: 'warning' },
-  confirmed: { label: 'কনফার্ম হয়েছে', variant: 'info' },
-  processing: { label: 'প্রসেসিং হচ্ছে', variant: 'info' },
-  shipped: { label: 'পাঠানো হয়েছে', variant: 'info' },
-  delivered: { label: 'ডেলিভার হয়েছে', variant: 'success' },
-  cancelled: { label: 'বাতিল হয়েছে', variant: 'danger' },
+  pending: { label: 'Pending', variant: 'warning' },
+  confirmed: { label: 'Confirmed', variant: 'info' },
+  processing: { label: 'Processing', variant: 'info' },
+  shipped: { label: 'Shipped', variant: 'info' },
+  delivered: { label: 'Delivered', variant: 'success' },
+  cancelled: { label: 'Cancelled', variant: 'danger' },
 }
 
 const OrderStatusBadge = ({ status, className }: OrderStatusBadgeProps) => {

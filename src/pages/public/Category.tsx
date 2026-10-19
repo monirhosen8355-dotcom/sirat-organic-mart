@@ -6,7 +6,7 @@ import { getProducts, type ProductPage } from '../../services/products/productSe
 import { getCategoryBySlug } from '../../services/categories/categoryService'
 import type { Product, Category as CategoryType } from '../../types'
 import ProductCard from '../../components/product/ProductCard'
-import Spinner from '../../components/common/Spinner'
+import { ProductGridSkeleton } from '../../components/common/Skeleton'
 import Button from '../../components/common/Button'
 
 const Category = () => {
@@ -46,7 +46,7 @@ const Category = () => {
         setHasMore(page.hasMore)
       } catch (err) {
         if (!cancelled) {
-          setError('পণ্য লোড করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।')
+          setError('There was a problem loading the products. Please try again.')
           console.error(err)
         }
       } finally {
@@ -70,7 +70,7 @@ const Category = () => {
       setHasMore(page.hasMore)
     } catch (err) {
       console.error(err)
-      toast.error('আরও পণ্য লোড করা যায়নি। আবার চেষ্টা করুন।')
+      toast.error('More products could not be loaded. Please try again.')
     } finally {
       setIsLoadingMore(false)
     }
@@ -79,9 +79,9 @@ const Category = () => {
   if (notFound) {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 px-4 text-center">
-        <p className="text-[color:var(--color-text-secondary)]">এই ক্যাটাগরিটি পাওয়া যায়নি।</p>
+        <p className="text-[color:var(--color-text-secondary)]">This category could not be found.</p>
         <Link to="/shop" className="text-[color:var(--color-emerald)] underline">
-          শপে ফিরে যান
+          Return to Shop
         </Link>
       </div>
     )
@@ -90,9 +90,9 @@ const Category = () => {
   return (
     <>
       <Helmet>
-        <title>{category ? `${category.name} — Sirat Organic Mart` : 'ক্যাটাগরি'}</title>
+        <title>{category ? `${category.name} — Shoplexᴮᴰ` : 'Category'}</title>
         {category?.name && (
-          <meta name="description" content={`${category.name} ক্যাটাগরির সব পণ্য দেখুন।`} />
+          <meta name="description" content={`Browse all products in the ${category.name} category.`} />
         )}
       </Helmet>
 
@@ -102,8 +102,8 @@ const Category = () => {
         </h1>
 
         {isLoading && (
-          <div className="flex justify-center py-16">
-            <Spinner size="lg" />
+          <div className="py-4">
+            <ProductGridSkeleton count={4} />
           </div>
         )}
 
@@ -111,7 +111,7 @@ const Category = () => {
 
         {!isLoading && !error && products.length === 0 && (
           <p className="py-16 text-center text-[color:var(--color-text-secondary)]">
-            এই ক্যাটাগরিতে কোনো পণ্য পাওয়া যায়নি।
+            No products were found in this category.
           </p>
         )}
 
@@ -126,7 +126,7 @@ const Category = () => {
             {hasMore && (
               <div className="mt-8 flex justify-center">
                 <Button variant="outline" isLoading={isLoadingMore} onClick={handleLoadMore}>
-                  আরও দেখুন
+                  Load more
                 </Button>
               </div>
             )}

@@ -1,167 +1,259 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import { Phone, MapPin, StickyNote } from 'lucide-react'
-import { getOrderById, getOrderStatusHistory } from '../../services/orders/orderService'
-import { useAuthStore } from '../../store/authStore'
-import type { Order, OrderStatusHistoryEntry } from '../../types'
+import toast from 'react-hot-toast'
+import { ArrowLeft } from 'lucide-react'
+import {
+  getOrderById,
+  getOrderStatusHistory,
+  updateOrderStatus,
+} from '../../services/orders/orderService'
+import { DELIVERY_CHARGES, DELIVERY_ZONE_LABELS } from '../../lib/delivery/deliveryZones'
+import type { Order, OrderStatus, OrderStatusHistoryEntry } from '../../types'
 import Card from '../../components/common/Card'
 import Button from '../../components/common/Button'
-import Spinner from '../../components/common/Spinner'
+import { OrderDetailSkeleton } from '../../components/common/Skeleton'
 import OrderStatusBadge from '../../components/common/OrderStatusBadge'
-import { getThumbnailUrl } from '../../lib/cloudinary/transform'
+
+const STATUS_OPTIONS: { label: string; value: OrderStatus }[] = [
+  { label: 'Pending', value: 'pending' },
+  { label: 'Confirmed', value: 'confirmed' },
+  { label: 'Processing', value: 'processing' },
+  { label: 'Shipped', value: 'shipped' },
+  { label: 'Delivered', value: 'delivered' },
+  { label: 'Cancelled', value: 'cancelled' },
+]
 
 const OrderDetail = () => {
-  const { orderId } = useParams<{ orderId: string }>()
-  const { user } = useAuthStore()
+  const { id } = useParams<{ id: string }>()
+
   const [order, setOrder] = useState<Order | null>(null)
   const [history, setHistory] = useState<OrderStatusHistoryEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [notFound, setNotFound] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [nextStatus, setNextStatus] = useState<OrderStatus>('pending')
+  const [statusNote, setStatusNote] = useState('')
+  const [isUpdating, setIsUpdating] = useState(false)
 
-  useEffect(() => {
-    if (!orderId) return
-    let cancelled = false
-
-    async function load() {
-      try {
-        const result = await getOrderById(orderId!)
-        if (cancelled) return
-
-        // নিজের অর্ডার না হলে দেখানো যাবে না (firestore.rules-এর সাথে সামঞ্জস্য রেখে)
-        if (!result || (result.userId && result.userId !== user?.uid)) {
-          setNotFound(true)
-          return
-        }
-
-        setOrder(result)
-        const statusHistory = await getOrderStatusHistory(orderId!)
-        if (!cancelled) setHistory(statusHistory)
-      } catch (err) {
-        if (!cancelled) {
-          console.error(err)
-          setNotFound(true)
-        }
-      } finally {
-        if (!cancelled) setIsLoading(false)
+  async function loadOrder() {
+    if (!id) return
+    setIsLoading(true)
+    setError(null)
+    try {
+      const [orderData, historyData] = await Promise.all([
+        getOrderById(id),
+        getOrderStatusHistory(id),
+      ])
+      if (!orderData) {
+        setError('Order not found.')
+        return
       }
+      setOrder(orderData)
+      setHistory(historyData)
+      setNextStatus(orderData.status)
+    } catch (err) {
+      setError('There was a problem loading the order.')
+      console.error(err)
+    } finally {
+      setIsLoading(false)
     }
-
-    load()
-    return () => {
-      cancelled = true
-    }
-  }, [orderId, user])
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Spinner size="lg" />
-      </div>
-    )
   }
 
-  if (notFound || !order) {
-    return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 px-4 text-center">
-        <p className="text-[color:var(--color-text-secondary)]">অর্ডারটি পাওয়া যায়নি।</p>
-        <Link to="/account/orders" className="text-[color:var(--color-emerald)] underline">
-          আমার অর্ডারে ফিরে যান
-        </Link>
-      </div>
-    )
+  useEffect(() => {
+    loadOrder()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
+
+  async function handleStatusUpdate() {
+    if (!id || !order) return
+    if (nextStatus === order.status) {
+      toast.error('The selected status is the same as the current one.')
+      return
+    }
+
+    setIsUpdating(true)
+    try {
+      await updateOrderStatus(id, nextStatus, statusNote.trim() || undefined)
+      toast.success('Order status updated successfully.')
+      setStatusNote('')
+      await loadOrder()
+    } catch (err) {
+      toast.error('There was a problem updating the status.')
+      console.error(err)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  if (isLoading) {
+    return <OrderDetailSkeleton />
+  }
+
+  if (error || !order) {
+    return <p className="py-16 text-center text-red-600">{error}</p>
   }
 
   return (
     <>
       <Helmet>
-        <title>অর্ডার #{order.id.slice(-8).toUpperCase()} — Sirat Organic Mart</title>
+        <title>Order #{order.id.slice(-8).toUpperCase()} — Admin — Shoplexᴮᴰ</title>
       </Helmet>
 
-      <div className="mx-auto max-w-2xl px-4 py-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-[color:var(--color-deep-green)]">
-            অর্ডার #{order.id.slice(-8).toUpperCase()}
-          </h1>
-          <OrderStatusBadge status={order.status} />
+      <Link
+        to="/admin/orders"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-[color:var(--color-text-secondary)] hover:text-black"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to orders
+      </Link>
+
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-semibold text-[color:var(--color-deep-green)]">
+          Order #{order.id.slice(-8).toUpperCase()}
+        </h1>
+        <OrderStatusBadge status={order.status} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="flex flex-col gap-6 lg:col-span-2">
+          <Card>
+            <h2 className="mb-3 font-medium">Customer information</h2>
+            <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="text-[color:var(--color-text-secondary)]">Name</dt>
+                <dd>{order.customerName}</dd>
+              </div>
+              <div>
+                <dt className="text-[color:var(--color-text-secondary)]">Phone</dt>
+                <dd>{order.customerPhone}</dd>
+              </div>
+              <div>
+                <dt className="text-[color:var(--color-text-secondary)]">Delivery Zone</dt>
+                <dd>
+                  {DELIVERY_ZONE_LABELS[order.deliveryZone]} (৳
+                  {DELIVERY_CHARGES[order.deliveryZone]})
+                </dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-[color:var(--color-text-secondary)]">Address</dt>
+                <dd>{order.deliveryAddress}</dd>
+              </div>
+              {order.deliveryNote && (
+                <div className="sm:col-span-2">
+                  <dt className="text-[color:var(--color-text-secondary)]">Note</dt>
+                  <dd>{order.deliveryNote}</dd>
+                </div>
+              )}
+              <div>
+                <dt className="text-[color:var(--color-text-secondary)]">Payment method</dt>
+                <dd>Cash on delivery</dd>
+              </div>
+            </dl>
+          </Card>
+
+          <Card>
+            <h2 className="mb-3 font-medium">Products</h2>
+            <div className="flex flex-col divide-y divide-gray-100">
+              {order.items.map((item, index) => (
+                <div key={`${item.productId}-${index}`} className="flex gap-3 py-3">
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    loading="lazy"
+                    className="h-14 w-14 rounded-lg object-cover"
+                  />
+                  <div className="flex flex-1 flex-col justify-center">
+                    <p className="text-sm font-medium">{item.name}</p>
+                    {item.variantLabel && (
+                      <p className="text-xs text-[color:var(--color-text-secondary)]">
+                        {item.variantLabel}
+                      </p>
+                    )}
+                    <p className="text-xs text-[color:var(--color-text-secondary)]">
+                      ৳{item.price} × {item.quantity}
+                    </p>
+                  </div>
+                  <div className="font-medium">৳{item.price * item.quantity}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 flex flex-col gap-1.5 border-t border-gray-100 pt-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-[color:var(--color-text-secondary)]">Subtotal</span>
+                <span>৳{order.subtotal}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[color:var(--color-text-secondary)]">Delivery charge</span>
+                <span>৳{order.deliveryCharge}</span>
+              </div>
+              {order.discount > 0 && (
+                <div className="flex justify-between text-emerald-700">
+                  <span>Discount {order.couponCode ? `(${order.couponCode})` : ''}</span>
+                  <span>-৳{order.discount}</span>
+                </div>
+              )}
+              <div className="mt-1 flex justify-between border-t border-gray-100 pt-2 text-base font-semibold">
+                <span>Total</span>
+                <span>৳{order.total}</span>
+              </div>
+            </div>
+          </Card>
+
+          <Card>
+            <h2 className="mb-3 font-medium">Status history</h2>
+            <div className="flex flex-col gap-3">
+              {history.map((entry, index) => (
+                <div key={index} className="flex gap-3">
+                  <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[color:var(--color-emerald)]" />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <OrderStatusBadge status={entry.status} />
+                      <span className="text-xs text-[color:var(--color-text-secondary)]">
+                        {new Date(entry.timestamp).toLocaleString('bn-BD')}
+                      </span>
+                    </div>
+                    {entry.note && (
+                      <p className="mt-0.5 text-sm text-[color:var(--color-text-secondary)]">
+                        {entry.note}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
         </div>
 
-        {/* Status history timeline */}
-        <Card className="mb-4">
-          <h2 className="mb-3 text-sm font-medium">অর্ডার ট্র্যাকিং</h2>
-          <div className="flex flex-col gap-3">
-            {history.map((entry, index) => (
-              <div key={index} className="flex items-start gap-3">
-                <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[color:var(--color-emerald)]" />
-                <div>
-                  <OrderStatusBadge status={entry.status} />
-                  <p className="mt-1 text-xs text-[color:var(--color-text-secondary)]">
-                    {new Date(entry.timestamp).toLocaleString('bn-BD')}
-                  </p>
-                  {entry.note && <p className="mt-1 text-xs">{entry.note}</p>}
-                </div>
-              </div>
+        <Card className="flex h-fit flex-col gap-3">
+          <h2 className="font-medium">Update status</h2>
+
+          <select
+            value={nextStatus}
+            onChange={(e) => setNextStatus(e.target.value as OrderStatus)}
+            disabled={isUpdating}
+            className="h-11 w-full rounded-lg border border-gray-300 bg-white px-3.5 text-base focus:border-[color:var(--color-emerald)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-emerald)]"
+          >
+            {STATUS_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
             ))}
-          </div>
+          </select>
+
+          <textarea
+            placeholder="নোট (ঐচ্ছিক)"
+            rows={3}
+            value={statusNote}
+            onChange={(e) => setStatusNote(e.target.value)}
+            disabled={isUpdating}
+            className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm focus:border-[color:var(--color-emerald)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-emerald)]"
+          />
+
+          <Button onClick={handleStatusUpdate} isLoading={isUpdating} fullWidth>
+            আপডেট করুন
+          </Button>
         </Card>
-
-        {/* Delivery info */}
-        <Card className="mb-4 flex flex-col gap-3">
-          <div className="flex items-start gap-2 text-sm">
-            <Phone className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--color-text-secondary)]" />
-            <div>
-              <p className="text-[color:var(--color-text-secondary)]">{order.customerName}</p>
-              <p>{order.customerPhone}</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-2 text-sm">
-            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--color-text-secondary)]" />
-            <p>{order.deliveryAddress}</p>
-          </div>
-          {order.deliveryNote && (
-            <div className="flex items-start gap-2 text-sm">
-              <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--color-text-secondary)]" />
-              <p>{order.deliveryNote}</p>
-            </div>
-          )}
-        </Card>
-
-        {/* Items */}
-        <Card className="mb-4">
-          <h2 className="mb-3 font-medium">অর্ডার আইটেম</h2>
-          <div className="flex flex-col gap-3">
-            {order.items.map((item) => (
-              <div key={`${item.productId}-${item.variantId ?? ''}`} className="flex gap-3">
-                <img
-                  src={getThumbnailUrl(item.image)}
-                  alt={item.name}
-                  loading="lazy"
-                  className="h-14 w-14 rounded-lg object-cover"
-                />
-                <div className="flex flex-1 flex-col justify-center">
-                  <p className="line-clamp-2 text-sm font-medium">{item.name}</p>
-                  <p className="text-xs text-[color:var(--color-text-secondary)]">
-                    {item.quantity} x ৳{item.price}
-                  </p>
-                </div>
-                <div className="shrink-0 text-sm font-semibold text-[color:var(--color-deep-green)]">
-                  ৳{item.price * item.quantity}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4 flex justify-between border-t border-gray-100 pt-3 text-base font-semibold">
-            <span>মোট</span>
-            <span>৳{order.total}</span>
-          </div>
-        </Card>
-
-        <div className="flex justify-center">
-          <Link to="/account/orders">
-            <Button variant="outline">সব অর্ডার দেখুন</Button>
-          </Link>
-        </div>
       </div>
     </>
   )

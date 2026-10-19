@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme {
+  /* ---------- বিদ্যমান color/font token — অপরিবর্তিত ---------- */
   --color-emerald: #10B981;
   --color-deep-green: #14532D;
   --color-natural-bg: #F7FAF7;
@@ -8,6 +9,28 @@
   --color-text-secondary: #6B7280;
 
   --font-sans: "Hind Siliguri", "Noto Sans Bengali", system-ui, sans-serif;
+
+  /* ---------- accent color ---------- */
+  --color-sale: #DC2626;
+  --color-sale-bg: #FEF2F2;
+
+  /* ---------- border-radius scale ---------- */
+  --radius-card: 1rem;
+  --radius-button: 0.625rem;
+  --radius-badge: 9999px;
+
+  /* ---------- shadow scale ---------- */
+  --shadow-card: 0 1px 3px rgba(17, 24, 39, 0.06),
+    0 1px 2px rgba(17, 24, 39, 0.04);
+
+  --shadow-card-hover: 0 8px 24px rgba(17, 24, 39, 0.10),
+    0 2px 6px rgba(17, 24, 39, 0.06);
+
+  --shadow-banner: 0 12px 32px rgba(20, 83, 45, 0.14);
+
+  /* ---------- spacing rhythm ---------- */
+  --spacing-section: 3rem;
+  --spacing-section-lg: 5rem;
 }
 
 body {
@@ -20,4 +43,73 @@ body {
 
 * {
   box-sizing: border-box;
+}
+
+/* =========================================================
+   SHOPLEX BRAND
+   ========================================================= */
+
+.brand-name {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.brand-name-suffix {
+  position: absolute;
+  top: -0.38em;
+  left: 100%;
+  margin-left: 0.75em;
+  font-size: 0.5em;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.brand-name-x {
+  position: relative;
+  display: inline-block;
+  width: 0.82em;
+  height: 1em;
+  margin-left: 0.02em;
+  flex-shrink: 0;
+}
+
+.brand-name-x-left,
+.brand-name-x-right {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0.12em;
+  height: 1.15em;
+  background: #000;
+  border-radius: 999px;
+  transform-origin: center;
+}
+
+/* First diagonal — normal X stroke */
+.brand-name-x-left {
+  transform: translate(-50%, -50%) rotate(38deg);
+}
+
+/* Second diagonal — normal X stroke */
+.brand-name-x-right {
+  transform: translate(-50%, -50%) rotate(-38deg);
+}
+
+/*
+   Extra upper-right tail.
+   This extends ONLY the upper-right end of the second stroke.
+*/
+.brand-name-x-left::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  width: 100%;
+  height: 0.48em;
+  background: #000;
+  border-radius: 999px;
 }

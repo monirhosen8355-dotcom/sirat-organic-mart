@@ -8,11 +8,20 @@ import {
   where,
   orderBy,
   limit,
+  runTransaction,
 } from 'firebase/firestore'
 import { db } from '../../lib/firebase/config'
 import type { Order, OrderStatus, OrderStatusHistoryEntry } from '../../types'
 
 const ORDERS_COLLECTION = 'orders'
+
+export function calculateOrderTotal(
+  subtotal: number,
+  deliveryCharge: number,
+  discount: number
+): number {
+  return subtotal + deliveryCharge - discount
+}
 
 /**
  * নতুন অর্ডার তৈরি করে — checkout থেকে কল হবে (guest বা logged-in দুটোতেই)।
@@ -27,6 +36,17 @@ const ORDERS_COLLECTION = 'orders'
 export async function createOrder(
   data: Omit<Order, 'id' | 'createdAt' | 'status'>
 ): Promise<string> {
+  const productIds = [...new Set(data.items.map((item) => item.productId))]
+  const productSnapshots = await Promise.all(
+    productIds.map((productId) => getDoc(doc(db, 'products', productId)))
+  )
+  if (productSnapshots.some((snapshot) => !snapshot.exists())) {
+    throw new Error('An order item is no longer available.')
+  }
+  if (productSnapshots.some((snapshot) => snapshot.data()?.type === 'affiliate')) {
+    throw new Error('Affiliate products cannot be added to an order.')
+  }
+
   const orderData = {
     ...data,
     status: 'pending' as OrderStatus,
@@ -98,14 +118,98 @@ export async function getDashboardOrderStats() {
  * একটা নতুন entry যোগ হয়। এই ফাংশন সবসময় admin থেকেই কল হবে (AdminRoute দিয়ে গার্ড করা
  * পেজ থেকে), তাই firestore.rules-এর isAdmin() শর্ত পূরণ হয়।
  */
+export async function updateOrderDeliveryCharge(
+  orderId: string,
+  newDeliveryCharge: number
+): Promise<void> {
+  const normalizedCharge = Number(newDeliveryCharge)
+  if (!Number.isFinite(normalizedCharge) || normalizedCharge < 0) {
+    throw new Error('Delivery charge must be a non-negative number.')
+  }
+
+  const orderRef = doc(db, ORDERS_COLLECTION, orderId)
+
+  await runTransaction(db, async (transaction) => {
+    const orderSnapshot = await transaction.get(orderRef)
+    if (!orderSnapshot.exists()) {
+      throw new Error('Order not found.')
+    }
+
+    const order = { id: orderSnapshot.id, ...orderSnapshot.data() } as Order
+    const total = calculateOrderTotal(order.subtotal, normalizedCharge, order.discount)
+
+    transaction.update(orderRef, {
+      deliveryCharge: normalizedCharge,
+      total,
+    })
+  })
+}
+
 export async function updateOrderStatus(
   orderId: string,
   newStatus: OrderStatus,
   note?: string
 ): Promise<void> {
-  const { updateDoc } = await import('firebase/firestore')
   const orderRef = doc(db, ORDERS_COLLECTION, orderId)
-  await updateDoc(orderRef, { status: newStatus })
+
+  await runTransaction(db, async (transaction) => {
+    const orderSnapshot = await transaction.get(orderRef)
+    if (!orderSnapshot.exists()) {
+      throw new Error('Order not found.')
+    }
+
+    const order = { id: orderSnapshot.id, ...orderSnapshot.data() } as Order
+    const shouldDeductStock =
+      (newStatus === 'confirmed' || newStatus === 'delivered') &&
+      !order.stockDeductedAt
+
+    if (!shouldDeductStock) {
+      transaction.update(orderRef, { status: newStatus })
+      return
+    }
+
+    const quantitiesByProduct = new Map<string, number>()
+    for (const item of order.items) {
+      quantitiesByProduct.set(
+        item.productId,
+        (quantitiesByProduct.get(item.productId) ?? 0) + item.quantity
+      )
+    }
+
+    const productEntries = [...quantitiesByProduct.entries()].map(([productId, quantity]) => ({
+      ref: doc(db, 'products', productId),
+      quantity,
+    }))
+    const productSnapshots = await Promise.all(
+      productEntries.map(({ ref }) => transaction.get(ref))
+    )
+
+    productSnapshots.forEach((productSnapshot, index) => {
+      if (!productSnapshot.exists()) {
+        throw new Error(`Product ${productEntries[index].ref.id} was not found.`)
+      }
+
+      const productData = productSnapshot.data()
+      if (productData.type === 'affiliate') {
+        throw new Error(`Affiliate product ${productEntries[index].ref.id} cannot be inventoried.`)
+      }
+
+      const currentStock = Number(productData.stock ?? 0)
+      const requestedQuantity = productEntries[index].quantity
+      if (currentStock < requestedQuantity) {
+        throw new Error(`Insufficient stock for product ${productEntries[index].ref.id}.`)
+      }
+
+      transaction.update(productEntries[index].ref, {
+        stock: currentStock - requestedQuantity,
+      })
+    })
+
+    transaction.update(orderRef, {
+      status: newStatus,
+      stockDeductedAt: Date.now(),
+    })
+  })
 
   await addDoc(collection(db, ORDERS_COLLECTION, orderId, 'statusHistory'), {
     status: newStatus,

@@ -4,12 +4,12 @@ import MainLayout from '../components/layout/MainLayout'
 import AdminLayout from '../layouts/AdminLayout'
 import ProtectedRoute from '../components/common/ProtectedRoute'
 import AdminRoute from '../components/common/AdminRoute'
-import Spinner from '../components/common/Spinner'
+import { RouteFallbackSkeleton } from '../components/common/Skeleton'
 import { trackPageView } from '../lib/analytics/track'
+import Home from '../pages/public/Home'
 
 // ---------- Public / Customer pages ----------
 const ComingSoon = lazy(() => import('../pages/public/ComingSoon'))
-const Home = lazy(() => import('../pages/public/Home'))
 const Shop = lazy(() => import('../pages/public/Shop'))
 const Category = lazy(() => import('../pages/public/Category'))
 const Search = lazy(() => import('../pages/public/Search'))
@@ -17,6 +17,7 @@ const ProductDetail = lazy(() => import('../pages/public/ProductDetail'))
 const Cart = lazy(() => import('../pages/public/Cart'))
 const Checkout = lazy(() => import('../pages/public/Checkout'))
 const OrderConfirmation = lazy(() => import('../pages/public/OrderConfirmation'))
+const OrderTracking = lazy(() => import('../pages/public/OrderTracking'))
 const Login = lazy(() => import('../pages/public/Login'))
 const Register = lazy(() => import('../pages/public/Register'))
 const ForgotPassword = lazy(() => import('../pages/public/ForgotPassword'))
@@ -37,25 +38,25 @@ const Addresses = lazy(() => import('../pages/account/Addresses'))
 const AdminLogin = lazy(() => import('../pages/admin/AdminLogin'))
 const Dashboard = lazy(() => import('../pages/admin/Dashboard'))
 const Categories = lazy(() => import('../pages/admin/Categories'))
+const HomeBanners = lazy(() => import('../pages/admin/HomeBanners'))
 const Products = lazy(() => import('../pages/admin/Products'))
 const ProductForm = lazy(() => import('../pages/admin/ProductForm'))
+const AffiliateProductForm = lazy(() => import('../pages/admin/AffiliateProductForm'))
 const AdminOrders = lazy(() => import('../pages/admin/Orders'))
 const AdminOrderDetail = lazy(() => import('../pages/admin/OrderDetail'))
 const Customers = lazy(() => import('../pages/admin/Customers'))
 const Coupons = lazy(() => import('../pages/admin/Coupons'))
 const MetaPixelSettings = lazy(() => import('../pages/admin/MetaPixelSettings'))
+const SiteSettings = lazy(() => import('../pages/admin/SiteSettings'))
+const CustomerSupport = lazy(() => import('../pages/admin/CustomerSupport'))
 const LegalPages = lazy(() => import('../pages/admin/LegalPages'))
 
 /**
- * পুরো পেজ জুড়ে ফুল-স্ক্রিন ফলব্যাক — lazy chunk লোড হওয়ার সময় দেখাবে।
- * MainLayout/AdminLayout-এর বাইরে বসানো, কারণ layout নিজেও lazy বাউন্ডারির ভেতরে না।
+ * Full-page fallback shown while lazy-loaded chunks are still loading.
+ * This is placed outside MainLayout/AdminLayout because the layout itself is not inside the lazy boundary.
  */
 function RouteFallback() {
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      <Spinner size="lg" />
-    </div>
-  )
+  return <RouteFallbackSkeleton />
 }
 
 const AppRoutes = () => {
@@ -79,6 +80,7 @@ const AppRoutes = () => {
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
+          <Route path="/order-tracking" element={<OrderTracking />} />
 
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
@@ -99,7 +101,7 @@ const AppRoutes = () => {
             <Route path="/account/addresses" element={<Addresses />} />
           </Route>
 
-          <Route path="*" element={<ComingSoon pageName="পেজ পাওয়া যায়নি (404)" />} />
+          <Route path="*" element={<ComingSoon pageName="Page not found (404)" />} />
         </Route>
 
         {/* ---------- Admin routes ---------- */}
@@ -110,13 +112,18 @@ const AppRoutes = () => {
             <Route path="/admin" element={<Dashboard />} />
             <Route path="/admin/products" element={<Products />} />
             <Route path="/admin/products/new" element={<ProductForm />} />
+            <Route path="/admin/products/new-affiliate" element={<AffiliateProductForm />} />
+            <Route path="/admin/products/:id/affiliate" element={<AffiliateProductForm />} />
             <Route path="/admin/products/:id" element={<ProductForm />} />
-            <Route path="/admin/categories" element={<Categories />} />
+                        <Route path="/admin/categories" element={<Categories />} />
+            <Route path="/admin/home-banners" element={<HomeBanners />} />
             <Route path="/admin/orders" element={<AdminOrders />} />
             <Route path="/admin/orders/:id" element={<AdminOrderDetail />} />
             <Route path="/admin/customers" element={<Customers />} />
             <Route path="/admin/coupons" element={<Coupons />} />
             <Route path="/admin/settings" element={<MetaPixelSettings />} />
+            <Route path="/admin/site-settings" element={<SiteSettings />} />
+            <Route path="/admin/customer-support" element={<CustomerSupport />} />
             <Route path="/admin/legal-pages" element={<LegalPages />} />
           </Route>
         </Route>

@@ -23,6 +23,22 @@ export interface Category {
   imageUrl?: string
   active: boolean
   order: number
+  showOnHomepage?: boolean
+  homeOrder?: number
+}
+
+// ---------- Home Banner ----------
+export interface HomeBanner {
+  id: string
+  imageUrl: string
+  linkUrl?: string
+  altText: string
+  title?: string
+  subtitle?: string
+  ctaText?: string
+  order: number
+  active: boolean
+  placement?: 'hero' | 'middle' | 'triple'
 }
 
 // ---------- Product ----------
@@ -36,16 +52,22 @@ export interface ProductVariant {
 
 export interface Product {
   id: string
+  type: 'normal' | 'affiliate'
   name: string
   slug: string
   shortDescription: string
   fullDescription: string
-  price: number
+  price?: number
+  priceCurrency?: string
   discountPrice?: number
-  stock: number
+  stock?: number
   sku: string
+  affiliateUrl?: string
   categoryId: string
   images: string[] // Cloudinary URLs
+  brand?: string
+  keywords?: string[]
+  tags?: string[]
   featured: boolean
   active: boolean
   seoTitle?: string
@@ -60,6 +82,7 @@ export interface Product {
 // ---------- Cart ----------
 export interface CartItem {
   productId: string
+  productType?: Product['type']
   name: string
   image: string
   price: number
@@ -99,6 +122,7 @@ export interface Order {
   userId?: string // guest হলে undefined
   customerName: string
   customerPhone: string
+  deliveryZone: 'dhaka' | 'outside'
   deliveryAddress: string
   deliveryNote?: string
   items: OrderItem[]
@@ -109,6 +133,7 @@ export interface Order {
   total: number
   paymentMethod: 'cod'
   status: OrderStatus
+  stockDeductedAt?: number
   courierTrackingId?: string // ভবিষ্যতের জন্য, এখন unused
   createdAt: number
 }
@@ -158,4 +183,75 @@ export interface MetaPixelSettings {
   enabled: boolean
   updatedAt: number
   updatedBy?: string
+}
+
+export interface FooterLink {
+  label: string
+  href: string
+}
+
+export interface FooterSection {
+  title: string
+  links: FooterLink[]
+}
+
+export interface SiteFooterSettings {
+  storeName: string
+  description: string
+  phone: string
+  email: string
+  whatsapp: string
+  facebook: string
+  instagram: string
+  youtube: string
+  sections: FooterSection[]
+  paymentMethods: string[]
+  trustItems: string[]
+  copyrightText: string
+  updatedAt: number
+  updatedBy?: string
+}
+
+// ---------- Customer Support ----------
+export interface SupportFAQ {
+  id: string
+  question: string
+  answer: string
+  order: number
+  active: boolean
+  createdAt: number
+  updatedAt: number
+  updatedBy?: string
+}
+
+export interface SupportConversation {
+  id: string
+  customerId: string
+  customerName: string
+  customerEmail?: string
+  lastMessage: string
+  lastMessageAt: number
+  unreadForAdmin: boolean
+  unreadForCustomer: boolean
+  createdAt: number
+  updatedAt: number
+}
+
+export interface SupportMessage {
+  id: string
+  conversationId: string
+  senderId: string
+  senderRole: 'customer' | 'admin'
+  text: string
+  createdAt: number
+}
+
+// ---------- Brand ----------
+export interface Brand {
+  id: string
+  name: string
+  logoUrl: string
+  linkUrl?: string
+  order: number
+  active: boolean
 }

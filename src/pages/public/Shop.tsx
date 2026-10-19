@@ -5,7 +5,7 @@ import { getProducts, type ProductPage } from '../../services/products/productSe
 import { getActiveCategories } from '../../services/categories/categoryService'
 import type { Product, Category } from '../../types'
 import ProductCard from '../../components/product/ProductCard'
-import Spinner from '../../components/common/Spinner'
+import { ProductGridSkeleton } from '../../components/common/Skeleton'
 import Button from '../../components/common/Button'
 
 const Shop = () => {
@@ -18,14 +18,14 @@ const Shop = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // ক্যাটাগরি একবারই লোড হবে
+  // Categories load once
   useEffect(() => {
     getActiveCategories()
       .then(setCategories)
-      .catch((err) => console.error('ক্যাটাগরি লোড করতে সমস্যা:', err))
+      .catch((err) => console.error('There was a problem loading categories:', err))
   }, [])
 
-  // প্রোডাক্ট লোড হবে প্রথমবার, আর ক্যাটাগরি বদলালে
+  // Products load on initial render and when the category changes
   useEffect(() => {
     let cancelled = false
     setIsLoading(true)
@@ -41,7 +41,7 @@ const Shop = () => {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError('পণ্য লোড করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।')
+          setError('There was a problem loading the products. Please try again.')
           console.error(err)
         }
       })
@@ -66,7 +66,7 @@ const Shop = () => {
       setHasMore(page.hasMore)
     } catch (err) {
       console.error(err)
-      toast.error('আরও পণ্য লোড করা যায়নি। আবার চেষ্টা করুন।')
+      toast.error('More products could not be loaded. Please try again.')
     } finally {
       setIsLoadingMore(false)
     }
@@ -75,13 +75,13 @@ const Shop = () => {
   return (
     <>
       <Helmet>
-        <title>শপ — Sirat Organic Mart</title>
-        <meta name="description" content="সব প্রাকৃতিক ও অর্গানিক পণ্য এক জায়গায়।" />
+        <title>Shop — Shoplexᴮᴰ</title>
+        <meta name="description" content="All natural and organic products in one place." />
       </Helmet>
 
       <div className="mx-auto max-w-7xl px-4 py-6">
         <h1 className="mb-4 text-xl font-semibold text-[color:var(--color-deep-green)]">
-          শপ
+          Shop
         </h1>
 
         {/* Category filter */}
@@ -96,7 +96,7 @@ const Shop = () => {
                   : 'border-gray-300 text-[color:var(--color-text-secondary)]',
               ].join(' ')}
             >
-              সব
+              All
             </button>
             {categories.map((cat) => (
               <button
@@ -116,8 +116,8 @@ const Shop = () => {
         )}
 
         {isLoading && (
-          <div className="flex justify-center py-16">
-            <Spinner size="lg" />
+          <div className="py-4">
+            <ProductGridSkeleton count={4} />
           </div>
         )}
 
@@ -127,7 +127,7 @@ const Shop = () => {
 
         {!isLoading && !error && products.length === 0 && (
           <p className="py-16 text-center text-[color:var(--color-text-secondary)]">
-            কোনো পণ্য পাওয়া যায়নি।
+            No products found.
           </p>
         )}
 
@@ -139,15 +139,20 @@ const Shop = () => {
               ))}
             </div>
 
-            {hasMore && (
+                        {hasMore && (
               <div className="mt-8 flex justify-center">
                 <Button variant="outline" isLoading={isLoadingMore} onClick={handleLoadMore}>
-                  আরও দেখুন
+                  Load more
                 </Button>
               </div>
             )}
           </>
         )}
+
+        {/* এখানে নতুন লাইনটা বসাও 👇 */}
+        <p className="mt-8 mb-2 text-center text-sm font-medium text-[color:var(--color-deep-green)]">
+          🏷️ Use code <strong>SIRAT420</strong> to get up to 10% off
+        </p>
       </div>
     </>
   )

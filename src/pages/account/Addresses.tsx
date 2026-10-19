@@ -12,7 +12,7 @@ import type { Address } from '../../types'
 import Card from '../../components/common/Card'
 import Button from '../../components/common/Button'
 import Input from '../../components/common/Input'
-import Spinner from '../../components/common/Spinner'
+import { AddressListSkeleton } from '../../components/common/Skeleton'
 
 const Addresses = () => {
   const { user } = useAuthStore()
@@ -88,7 +88,7 @@ const Addresses = () => {
   return (
     <>
       <Helmet>
-        <title>ঠিকানা — Sirat Organic Mart</title>
+        <title>ঠিকানা — Shoplexᴮᴰ</title>
       </Helmet>
 
       <div className="mx-auto max-w-2xl px-4 py-6">
@@ -144,9 +144,7 @@ const Addresses = () => {
         )}
 
         {isLoading ? (
-          <div className="flex justify-center py-16">
-            <Spinner size="lg" />
-          </div>
+          <AddressListSkeleton count={3} />
         ) : addresses.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
             <MapPin className="h-12 w-12 text-[color:var(--color-text-secondary)] opacity-40" />

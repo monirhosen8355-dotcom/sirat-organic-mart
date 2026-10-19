@@ -21,6 +21,11 @@ describe('cartStore', () => {
     expect(useCartStore.getState().itemCount()).toBe(1)
   })
 
+  it('অ্যাফিলিয়েট প্রোডাক্ট কার্টে যোগ করে না', () => {
+    useCartStore.getState().addItem({ ...sampleItem, productType: 'affiliate' })
+    expect(useCartStore.getState().items).toHaveLength(0)
+  })
+
   it('একই প্রোডাক্ট আবার যোগ করলে quantity বাড়ে, নতুন এন্ট্রি হয় না', () => {
     useCartStore.getState().addItem(sampleItem)
     useCartStore.getState().addItem({ ...sampleItem, quantity: 2 })

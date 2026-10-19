@@ -26,7 +26,7 @@ const Login = () => {
       navigate(from, { replace: true })
     } catch (err) {
       console.error(err)
-      setError('ইমেইল বা পাসওয়ার্ড সঠিক নয়।')
+      setError('The email or password is incorrect.')
     } finally {
       setIsSubmitting(false)
     }
@@ -35,17 +35,17 @@ const Login = () => {
   return (
     <>
       <Helmet>
-        <title>লগইন — Sirat Organic Mart</title>
+        <title>Login — Shoplexᴮᴰ</title>
       </Helmet>
 
       <div className="mx-auto max-w-sm px-4 py-12">
         <h1 className="mb-6 text-xl font-semibold text-[color:var(--color-deep-green)]">
-          লগইন করুন
+          Log In
         </h1>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <Input
-            label="ইমেইল"
+            label="Email"
             type="email"
             required
             value={email}
@@ -53,7 +53,7 @@ const Login = () => {
             disabled={isSubmitting}
           />
           <Input
-            label="পাসওয়ার্ড"
+            label="Password"
             type="password"
             required
             value={password}
@@ -66,24 +66,24 @@ const Login = () => {
             to="/forgot-password"
             className="text-right text-sm text-[color:var(--color-emerald)] hover:underline"
           >
-            পাসওয়ার্ড ভুলে গেছেন?
+            Forgot password?
           </Link>
 
           <Button type="submit" size="lg" fullWidth isLoading={isSubmitting}>
-            লগইন করুন
+            Log In
           </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-[color:var(--color-text-secondary)]">
-          অ্যাকাউন্ট নেই?{' '}
+          Don’t have an account?{' '}
           <Link to="/register" className="font-medium text-[color:var(--color-emerald)]">
-            রেজিস্ট্রেশন করুন
+            Register
           </Link>
         </p>
 
         <p className="mt-2 text-center text-sm">
           <Link to="/shop" className="text-[color:var(--color-text-secondary)] underline">
-            গেস্ট হিসেবে কেনাকাটা চালিয়ে যান
+            Continue shopping as a guest
           </Link>
         </p>
       </div>

@@ -5,12 +5,11 @@ import Input from '../common/Input'
 import { validateCoupon } from '../../services/coupons/couponService'
 import type { CartItem } from '../../types'
 
-export const DELIVERY_CHARGE = 80
-
 interface OrderSummaryProps {
   items: CartItem[]
   subtotal: number
   discount: number
+  deliveryCharge: number
   appliedCouponCode: string | null
   onCouponApplied: (discount: number, code: string | null) => void
 }
@@ -19,6 +18,7 @@ const OrderSummary = ({
   items,
   subtotal,
   discount,
+  deliveryCharge,
   appliedCouponCode,
   onCouponApplied,
 }: OrderSummaryProps) => {
@@ -26,7 +26,7 @@ const OrderSummary = ({
   const [isApplying, setIsApplying] = useState(false)
   const [couponError, setCouponError] = useState('')
 
-  const total = subtotal + DELIVERY_CHARGE - discount
+  const total = subtotal + deliveryCharge - discount
 
   const handleApplyCoupon = async () => {
     const code = couponInput.trim()
@@ -40,13 +40,13 @@ const OrderSummary = ({
 
       if (result.valid) {
         onCouponApplied(result.discountAmount, result.couponCode ?? code.toUpperCase())
-        toast.success('কুপন প্রয়োগ করা হয়েছে।')
+        toast.success('Coupon applied successfully.')
       } else {
-        setCouponError(result.error || 'কুপন কোডটি সঠিক নয়।')
+        setCouponError(result.error || 'The coupon code is invalid.')
       }
     } catch (err) {
-      console.error('কুপন প্রয়োগ ব্যর্থ:', err)
-      setCouponError('কুপন যাচাই করা যায়নি। আবার চেষ্টা করুন।')
+      console.error('Coupon application failed:', err)
+      setCouponError('We could not validate the coupon. Please try again.')
     } finally {
       setIsApplying(false)
     }
@@ -60,7 +60,7 @@ const OrderSummary = ({
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4">
-      <h3 className="mb-3 font-medium">অর্ডার সামারি</h3>
+      <h3 className="mb-3 font-medium">Order summary</h3>
 
       <div className="flex flex-col gap-3 border-b border-gray-100 pb-3">
         {items.map((item) => (
@@ -98,21 +98,21 @@ const OrderSummary = ({
         {appliedCouponCode ? (
           <div className="flex items-center justify-between rounded-lg bg-green-50 px-3 py-2 text-sm">
             <span className="font-medium text-green-700">
-              কুপন প্রয়োগ হয়েছে: {appliedCouponCode}
+              Coupon applied: {appliedCouponCode}
             </span>
             <button
               type="button"
               onClick={handleRemoveCoupon}
               className="text-xs text-red-600 underline"
             >
-              সরিয়ে ফেলুন
+              Remove
             </button>
           </div>
         ) : (
           <div className="flex items-start gap-2">
             <div className="flex-1">
               <Input
-                placeholder="কুপন কোড লিখুন"
+                placeholder="Enter coupon code"
                 value={couponInput}
                 onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                 error={couponError}
@@ -127,7 +127,7 @@ const OrderSummary = ({
               onClick={handleApplyCoupon}
               disabled={!couponInput.trim()}
             >
-              প্রয়োগ করুন
+              Apply
             </Button>
           </div>
         )}
@@ -135,21 +135,21 @@ const OrderSummary = ({
 
       <div className="flex flex-col gap-2 pt-3 text-sm">
         <div className="flex justify-between">
-          <span className="text-[color:var(--color-text-secondary)]">সাবটোটাল</span>
+          <span className="text-[color:var(--color-text-secondary)]">Subtotal</span>
           <span>৳{subtotal}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-[color:var(--color-text-secondary)]">ডেলিভারি চার্জ</span>
-          <span>৳{DELIVERY_CHARGE}</span>
+          <span className="text-[color:var(--color-text-secondary)]">Delivery charge</span>
+          <span>{deliveryCharge > 0 ? `৳${deliveryCharge}` : 'এলাকা নির্বাচন করুন'}</span>
         </div>
         {discount > 0 && (
           <div className="flex justify-between text-red-600">
-            <span>ছাড়</span>
+            <span>Discount</span>
             <span>−৳{discount}</span>
           </div>
         )}
         <div className="mt-2 flex justify-between border-t border-gray-100 pt-2 text-base font-semibold">
-          <span>মোট</span>
+          <span>Total</span>
           <span>৳{total}</span>
         </div>
       </div>

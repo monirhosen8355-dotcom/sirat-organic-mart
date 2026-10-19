@@ -5,7 +5,7 @@ import { Search as SearchIcon } from 'lucide-react'
 import { searchProducts } from '../../services/products/productService'
 import type { Product } from '../../types'
 import ProductCard from '../../components/product/ProductCard'
-import Spinner from '../../components/common/Spinner'
+import { ProductGridSkeleton } from '../../components/common/Skeleton'
 import Input from '../../components/common/Input'
 
 const Search = () => {
@@ -34,7 +34,7 @@ const Search = () => {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError('সার্চ করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।')
+          setError('There was a problem searching. Please try again.')
           console.error(err)
         }
       })
@@ -55,7 +55,7 @@ const Search = () => {
   return (
     <>
       <Helmet>
-        <title>সার্চ — Sirat Organic Mart</title>
+        <title>Search — Shoplexᴮᴰ</title>
       </Helmet>
 
       <div className="mx-auto max-w-7xl px-4 py-6">
@@ -63,20 +63,20 @@ const Search = () => {
           <Input
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="পণ্য খুঁজুন..."
+            placeholder="Search for products..."
           />
         </form>
 
         {!queryFromUrl.trim() && (
           <div className="flex flex-col items-center gap-3 py-16 text-center text-[color:var(--color-text-secondary)]">
             <SearchIcon className="h-10 w-10 opacity-40" />
-            <p>পণ্য খুঁজতে উপরে লিখুন</p>
+            <p>Type above to search for products</p>
           </div>
         )}
 
         {queryFromUrl.trim() && isLoading && (
-          <div className="flex justify-center py-16">
-            <Spinner size="lg" />
+          <div className="py-4">
+            <ProductGridSkeleton count={4} />
           </div>
         )}
 
@@ -86,7 +86,7 @@ const Search = () => {
 
         {queryFromUrl.trim() && !isLoading && !error && products.length === 0 && (
           <p className="py-16 text-center text-[color:var(--color-text-secondary)]">
-            কোনো পণ্য পাওয়া যায়নি।
+            No products found.
           </p>
         )}
 

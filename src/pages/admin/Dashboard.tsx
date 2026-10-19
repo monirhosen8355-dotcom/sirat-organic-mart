@@ -6,7 +6,7 @@ import { getDashboardOrderStats } from '../../services/orders/orderService'
 import { getAllProductsAdmin } from '../../services/products/productService'
 import type { Order, Product } from '../../types'
 import Card from '../../components/common/Card'
-import Spinner from '../../components/common/Spinner'
+import { DashboardSkeleton } from '../../components/common/Skeleton'
 import OrderStatusBadge from '../../components/common/OrderStatusBadge'
 
 const LOW_STOCK_THRESHOLD = 5
@@ -40,12 +40,15 @@ const Dashboard = () => {
           ...orderStats,
           totalProducts: products.length,
           lowStockProducts: products.filter(
-            (p) => p.active && p.stock <= LOW_STOCK_THRESHOLD
+            (p) =>
+              p.active &&
+              p.type !== 'affiliate' &&
+              (p.stock ?? 0) <= LOW_STOCK_THRESHOLD
           ),
         })
       } catch (err) {
         if (!cancelled) {
-          setError('ড্যাশবোর্ড ডেটা লোড করতে সমস্যা হয়েছে।')
+          setError('There was a problem loading the dashboard data.')
           console.error(err)
         }
       } finally {
@@ -60,11 +63,7 @@ const Dashboard = () => {
   }, [])
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Spinner size="lg" />
-      </div>
-    )
+    return <DashboardSkeleton />
   }
 
   if (error || !stats) {
@@ -72,20 +71,20 @@ const Dashboard = () => {
   }
 
   const statCards = [
-    { label: 'মোট অর্ডার', value: stats.totalOrders, icon: ShoppingBag },
-    { label: 'অপেক্ষমাণ অর্ডার', value: stats.pendingOrders, icon: Clock },
-    { label: 'আজকের অর্ডার', value: stats.todayOrders, icon: CalendarDays },
-    { label: 'মোট প্রোডাক্ট', value: stats.totalProducts, icon: Package },
+    { label: 'Total orders', value: stats.totalOrders, icon: ShoppingBag },
+    { label: 'Pending orders', value: stats.pendingOrders, icon: Clock },
+    { label: 'Today\'s orders', value: stats.todayOrders, icon: CalendarDays },
+    { label: 'Total products', value: stats.totalProducts, icon: Package },
   ]
 
   return (
     <>
       <Helmet>
-        <title>ড্যাশবোর্ড — Admin — Sirat Organic Mart</title>
+        <title>Dashboard — Admin — Shoplexᴮᴰ</title>
       </Helmet>
 
       <h1 className="mb-6 text-xl font-semibold text-[color:var(--color-deep-green)]">
-        ড্যাশবোর্ড
+        Dashboard
       </h1>
 
       <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -102,13 +101,13 @@ const Dashboard = () => {
         <Card className="mb-8 border-amber-300 bg-amber-50">
           <div className="mb-2 flex items-center gap-2 text-amber-800">
             <AlertTriangle className="h-4 w-4" />
-            <span className="font-medium">কম স্টকের প্রোডাক্ট</span>
+            <span className="font-medium">Low stock products</span>
           </div>
           <ul className="flex flex-col gap-1 text-sm">
             {stats.lowStockProducts.map((p) => (
               <li key={p.id}>
                 <Link to={`/admin/products/${p.id}`} className="hover:underline">
-                  {p.name} — মাত্র {p.stock}টি বাকি
+                  {p.name} — only {p.stock} left
                 </Link>
               </li>
             ))}
@@ -118,15 +117,15 @@ const Dashboard = () => {
 
       <Card>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-medium">সাম্প্রতিক অর্ডার</h2>
+          <h2 className="font-medium">Recent orders</h2>
           <Link to="/admin/orders" className="text-sm text-[color:var(--color-emerald)]">
-            সব দেখুন
+            View all
           </Link>
         </div>
 
         {stats.recentOrders.length === 0 ? (
           <p className="py-4 text-sm text-[color:var(--color-text-secondary)]">
-            এখনো কোনো অর্ডার নেই।
+            No orders yet.
           </p>
         ) : (
           <div className="flex flex-col gap-2">

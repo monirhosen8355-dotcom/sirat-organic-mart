@@ -20,12 +20,12 @@ export interface CloudinaryUploadResult {
  * একটা ইমেজ ফাইল Cloudinary-তে আপলোড করে এবং তার URL/মেটাডেটা রিটার্ন করে।
  * শুধু unsigned upload preset ব্যবহার করে — কোনো API secret দরকার হয় না।
  */
-export async function uploadImageToCloudinary(
-  file: File,
+async function uploadSourceToCloudinary(
+  source: File | string,
   onProgress?: (percent: number) => void
 ): Promise<CloudinaryUploadResult> {
   const formData = new FormData()
-  formData.append('file', file)
+  formData.append('file', source)
   formData.append('upload_preset', UPLOAD_PRESET)
 
   return new Promise((resolve, reject) => {
@@ -59,6 +59,17 @@ export async function uploadImageToCloudinary(
 
     xhr.send(formData)
   })
+}
+
+export function uploadImageToCloudinary(
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<CloudinaryUploadResult> {
+  return uploadSourceToCloudinary(file, onProgress)
+}
+
+export function uploadRemoteImageToCloudinary(url: string): Promise<CloudinaryUploadResult> {
+  return uploadSourceToCloudinary(url)
 }
 
 /**

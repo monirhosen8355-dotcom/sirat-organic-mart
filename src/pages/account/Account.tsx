@@ -9,7 +9,7 @@ import { useAuthStore } from '../../store/authStore'
 import { getUserProfile } from '../../services/users/userService'
 import type { UserProfile } from '../../types'
 import Card from '../../components/common/Card'
-import Spinner from '../../components/common/Spinner'
+import { AccountSkeleton } from '../../components/common/Skeleton'
 import Button from '../../components/common/Button'
 
 const Account = () => {
@@ -37,17 +37,13 @@ const Account = () => {
   }, [user])
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Spinner size="lg" />
-      </div>
-    )
+    return <AccountSkeleton />
   }
 
   return (
     <>
       <Helmet>
-        <title>আমার অ্যাকাউন্ট — Sirat Organic Mart</title>
+        <title>আমার অ্যাকাউন্ট — Shoplexᴮᴰ</title>
       </Helmet>
 
       <div className="mx-auto max-w-2xl px-4 py-6">

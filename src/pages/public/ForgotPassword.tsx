@@ -21,7 +21,7 @@ const ForgotPassword = () => {
       setSent(true)
     } catch (err) {
       console.error(err)
-      setError('এই ইমেইলে পাসওয়ার্ড রিসেট লিংক পাঠানো যায়নি।')
+      setError('A password reset link could not be sent to this email address.')
     } finally {
       setIsSubmitting(false)
     }
@@ -30,22 +30,22 @@ const ForgotPassword = () => {
   return (
     <>
       <Helmet>
-        <title>পাসওয়ার্ড রিসেট — Sirat Organic Mart</title>
+        <title>Password Reset — Shoplexᴮᴰ</title>
       </Helmet>
 
       <div className="mx-auto max-w-sm px-4 py-12">
         <h1 className="mb-6 text-xl font-semibold text-[color:var(--color-deep-green)]">
-          পাসওয়ার্ড রিসেট
+          Password Reset
         </h1>
 
         {sent ? (
           <p className="text-sm text-[color:var(--color-text-secondary)]">
-            আপনার ইমেইলে পাসওয়ার্ড রিসেট লিংক পাঠানো হয়েছে। ইনবক্স চেক করুন।
+            A password reset link has been sent to your email. Please check your inbox.
           </p>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input
-              label="ইমেইল"
+              label="Email"
               type="email"
               required
               value={email}
@@ -54,14 +54,14 @@ const ForgotPassword = () => {
               disabled={isSubmitting}
             />
             <Button type="submit" size="lg" fullWidth isLoading={isSubmitting}>
-              রিসেট লিংক পাঠান
+              Send Reset Link
             </Button>
           </form>
         )}
 
         <p className="mt-6 text-center text-sm">
           <Link to="/login" className="text-[color:var(--color-emerald)] hover:underline">
-            লগইনে ফিরে যান
+            Return to Login
           </Link>
         </p>
       </div>

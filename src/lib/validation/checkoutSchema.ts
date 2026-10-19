@@ -16,6 +16,9 @@ export const checkoutSchema = z.object({
     .string()
     .trim()
     .regex(bdPhoneRegex, 'সঠিক ১১ ডিজিটের বাংলাদেশি ফোন নম্বর দিন (যেমন: 017XXXXXXXX)'),
+  deliveryZone: z.enum(['dhaka', 'outside'], {
+    message: 'ডেলিভারি এলাকা নির্বাচন করুন',
+  }),
   deliveryAddress: z
     .string()
     .trim()

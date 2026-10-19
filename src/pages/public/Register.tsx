@@ -21,7 +21,7 @@ const Register = () => {
     setError(null)
 
     if (password.length < 6) {
-      setError('পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে')
+      setError('Password must be at least 6 characters long.')
       return
     }
 
@@ -43,9 +43,9 @@ const Register = () => {
       console.error(err)
       const code = (err as { code?: string })?.code
       if (code === 'auth/email-already-in-use') {
-        setError('এই ইমেইল দিয়ে ইতিমধ্যে অ্যাকাউন্ট আছে।')
+        setError('An account already exists with this email.')
       } else {
-        setError('রেজিস্ট্রেশন করা যায়নি। আবার চেষ্টা করুন।')
+        setError('Registration failed. Please try again.')
       }
     } finally {
       setIsSubmitting(false)
@@ -55,24 +55,24 @@ const Register = () => {
   return (
     <>
       <Helmet>
-        <title>রেজিস্ট্রেশন — Sirat Organic Mart</title>
+        <title>Register — Shoplexᴮᴰ</title>
       </Helmet>
 
       <div className="mx-auto max-w-sm px-4 py-12">
         <h1 className="mb-6 text-xl font-semibold text-[color:var(--color-deep-green)]">
-          নতুন অ্যাকাউন্ট তৈরি করুন
+          Create an Account
         </h1>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <Input
-            label="পুরো নাম"
+            label="Full Name"
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
             disabled={isSubmitting}
           />
           <Input
-            label="মোবাইল নম্বর"
+            label="Mobile Number"
             type="tel"
             required
             value={phone}
@@ -80,7 +80,7 @@ const Register = () => {
             disabled={isSubmitting}
           />
           <Input
-            label="ইমেইল"
+            label="Email"
             type="email"
             required
             value={email}
@@ -88,9 +88,9 @@ const Register = () => {
             disabled={isSubmitting}
           />
           <Input
-            label="পাসওয়ার্ড"
+            label="Password"
             type="password"
-            hint="কমপক্ষে ৬ অক্ষর"
+            hint="At least 6 characters"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -99,14 +99,14 @@ const Register = () => {
           />
 
           <Button type="submit" size="lg" fullWidth isLoading={isSubmitting}>
-            রেজিস্ট্রেশন করুন
+            Register
           </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-[color:var(--color-text-secondary)]">
-          ইতিমধ্যে অ্যাকাউন্ট আছে?{' '}
+          Already have an account?{' '}
           <Link to="/login" className="font-medium text-[color:var(--color-emerald)]">
-            লগইন করুন
+            Log In
           </Link>
         </p>
       </div>

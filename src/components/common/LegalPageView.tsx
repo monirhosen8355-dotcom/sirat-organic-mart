@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { getLegalPage } from '../../services/legal/legalService'
 import type { LegalPage, LegalPageSlug } from '../../types'
-import Spinner from './Spinner'
+import { Skeleton } from './Skeleton'
 
 interface LegalPageViewProps {
   slug: LegalPageSlug
@@ -38,8 +38,15 @@ const LegalPageView = ({ slug, fallbackTitle }: LegalPageViewProps) => {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <Spinner size="lg" />
+      <div className="mx-auto max-w-3xl px-4 py-8">
+        <Skeleton className="mb-6 h-7 w-48" />
+        <div className="space-y-3">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-5/6" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+        </div>
       </div>
     )
   }
@@ -57,7 +64,7 @@ const LegalPageView = ({ slug, fallbackTitle }: LegalPageViewProps) => {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <Helmet>
-        <title>{title} — Sirat Organic Mart</title>
+        <title>{title} — Shoplexᴮᴰ</title>
       </Helmet>
 
       <h1 className="mb-6 text-xl font-semibold text-[color:var(--color-deep-green)]">

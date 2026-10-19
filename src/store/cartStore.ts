@@ -18,6 +18,8 @@ export const useCartStore = create<CartState>()(
       items: [],
 
       addItem: (item) => {
+        if (item.productType === 'affiliate') return
+
         const existing = get().items.find(
           (i) => i.productId === item.productId && i.variantId === item.variantId
         )

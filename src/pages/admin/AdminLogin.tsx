@@ -36,7 +36,7 @@ const AdminLogin = () => {
   return (
     <>
       <Helmet>
-        <title>অ্যাডমিন লগইন — Sirat Organic Mart</title>
+        <title>অ্যাডমিন লগইন — Shoplexᴮᴰ</title>
       </Helmet>
 
       <div className="flex min-h-screen items-center justify-center bg-[color:var(--color-natural-bg)] px-4">
@@ -45,7 +45,7 @@ const AdminLogin = () => {
             অ্যাডমিন প্যানেল
           </h1>
           <p className="mb-6 text-sm text-[color:var(--color-text-secondary)]">
-            Sirat Organic Mart — শুধু অনুমোদিত অ্যাডমিনদের জন্য
+            Shoplexᴮᴰ — শুধু অনুমোদিত অ্যাডমিনদের জন্য
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">

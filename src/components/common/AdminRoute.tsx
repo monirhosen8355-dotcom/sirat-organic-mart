@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
-import Spinner from './Spinner'
+import { FormSkeleton } from './Skeleton'
 
 /**
  * অ্যাডমিন রুটের জন্য গার্ড (/admin/* — লগইন পেজ ছাড়া বাকি সব)।
@@ -12,8 +12,10 @@ const AdminRoute = () => {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Spinner size="lg" />
+      <div className="flex min-h-screen items-center justify-center p-6">
+        <div className="w-full max-w-md">
+          <FormSkeleton />
+        </div>
       </div>
     )
   }

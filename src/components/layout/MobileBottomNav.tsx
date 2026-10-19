@@ -3,11 +3,11 @@ import { Home, Store, Search, ShoppingCart, User } from 'lucide-react'
 import { useCartStore } from '../../store/cartStore'
 
 const navItems = [
-  { to: '/', label: 'হোম', icon: Home },
-  { to: '/shop', label: 'শপ', icon: Store },
-  { to: '/search', label: 'সার্চ', icon: Search },
-  { to: '/cart', label: 'কার্ট', icon: ShoppingCart },
-  { to: '/account', label: 'অ্যাকাউন্ট', icon: User },
+  { to: '/', label: 'Home', icon: Home },
+  { to: '/search', label: 'Search', icon: Search },
+  { to: '/shop', label: 'Shop', icon: Store },
+  { to: '/cart', label: 'Cart', icon: ShoppingCart },
+  { to: '/account', label: 'Account', icon: User },
 ]
 
 const MobileBottomNav = () => {
@@ -19,10 +19,11 @@ const MobileBottomNav = () => {
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="flex h-16 items-center justify-around">
-        {navItems.map(({ to, label, icon: Icon }) => {
+        {navItems.map(({ to, label, icon: Icon }, index) => {
           const isCart = to === '/cart'
+          const isShop = index === 2
           const accessibleLabel =
-            isCart && itemCount > 0 ? `${label}, ${itemCount}টি পণ্য আছে` : label
+            isCart && itemCount > 0 ? `${label}, ${itemCount} items` : label
 
           return (
             <NavLink
@@ -32,7 +33,8 @@ const MobileBottomNav = () => {
               aria-label={accessibleLabel}
               className={({ isActive }) =>
                 [
-                  'flex min-w-[56px] flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1.5 text-[11px]',
+                  'flex flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1.5 text-[11px]',
+                  isShop ? 'min-w-[68px] -translate-y-0.5 px-3 py-2' : 'min-w-[56px]',
                   isActive
                     ? 'text-[color:var(--color-emerald)]'
                     : 'text-[color:var(--color-text-secondary)]',
@@ -40,14 +42,14 @@ const MobileBottomNav = () => {
               }
             >
               <span className="relative" aria-hidden="true">
-                <Icon className="h-5 w-5" />
+                <Icon className={isShop ? 'h-6 w-6' : 'h-5 w-5'} />
                 {isCart && itemCount > 0 && (
                   <span className="absolute -right-2 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[color:var(--color-emerald)] text-[9px] font-semibold text-white">
                     {itemCount}
                   </span>
                 )}
               </span>
-              {label}
+              <span className={isShop ? 'text-[12px]' : ''}>{label}</span>
             </NavLink>
           )
         })}

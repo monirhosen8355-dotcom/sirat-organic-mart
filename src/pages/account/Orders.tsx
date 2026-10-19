@@ -6,7 +6,7 @@ import { useAuthStore } from '../../store/authStore'
 import { getOrdersByUser } from '../../services/orders/orderService'
 import type { Order } from '../../types'
 import Card from '../../components/common/Card'
-import Spinner from '../../components/common/Spinner'
+import { OrderListSkeleton } from '../../components/common/Skeleton'
 import OrderStatusBadge from '../../components/common/OrderStatusBadge'
 
 const Orders = () => {
@@ -39,7 +39,7 @@ const Orders = () => {
   return (
     <>
       <Helmet>
-        <title>অর্ডার হিস্টরি — Sirat Organic Mart</title>
+        <title>অর্ডার হিস্টরি — Shoplexᴮᴰ</title>
       </Helmet>
 
       <div className="mx-auto max-w-2xl px-4 py-6">
@@ -47,11 +47,7 @@ const Orders = () => {
           আমার অর্ডার
         </h1>
 
-        {isLoading && (
-          <div className="flex justify-center py-16">
-            <Spinner size="lg" />
-          </div>
-        )}
+        {isLoading && <OrderListSkeleton count={4} />}
 
         {!isLoading && error && <p className="py-16 text-center text-red-600">{error}</p>}
 

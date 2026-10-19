@@ -1,5 +1,5 @@
 import LegalPageView from '../../components/common/LegalPageView'
 
-const About = () => <LegalPageView slug="about" fallbackTitle="আমাদের সম্পর্কে" />
+const About = () => <LegalPageView slug="about" fallbackTitle="About Us" />
 
 export default About

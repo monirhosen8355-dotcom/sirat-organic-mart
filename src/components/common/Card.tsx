@@ -16,9 +16,11 @@ const Card = ({
   return (
     <div
       className={[
-        'rounded-xl border border-gray-200 bg-white shadow-sm',
+        'rounded-card border border-gray-200 bg-white shadow-card',
         padded ? 'p-4' : '',
-        hoverable ? 'transition-shadow duration-150 hover:shadow-md' : '',
+        hoverable
+          ? 'transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover'
+          : '',
         className,
       ]
         .filter(Boolean)

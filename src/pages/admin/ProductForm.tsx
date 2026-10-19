@@ -15,7 +15,7 @@ import type { Category } from '../../types'
 import Card from '../../components/common/Card'
 import Button from '../../components/common/Button'
 import Input from '../../components/common/Input'
-import Spinner from '../../components/common/Spinner'
+import { FormSkeleton } from '../../components/common/Skeleton'
 
 function slugify(name: string): string {
   return name
@@ -36,6 +36,9 @@ interface ProductFormState {
   sku: string
   categoryId: string
   images: string[]
+  brand: string
+  keywords: string
+  tags: string
   featured: boolean
   active: boolean
   seoTitle: string
@@ -53,6 +56,9 @@ const emptyForm: ProductFormState = {
   sku: '',
   categoryId: '',
   images: [],
+  brand: '',
+  keywords: '',
+  tags: '',
   featured: false,
   active: true,
   seoTitle: '',
@@ -80,7 +86,7 @@ const ProductForm = () => {
         if (id) {
           const product = await getProductById(id)
           if (!product) {
-            setLoadError('প্রোডাক্ট পাওয়া যায়নি।')
+            setLoadError('Product not found.')
             return
           }
           setForm({
@@ -94,6 +100,9 @@ const ProductForm = () => {
             sku: product.sku,
             categoryId: product.categoryId,
             images: product.images,
+            brand: product.brand ?? '',
+            keywords: product.keywords?.join(', ') ?? '',
+            tags: product.tags?.join(', ') ?? '',
             featured: product.featured,
             active: product.active,
             seoTitle: product.seoTitle ?? '',
@@ -103,7 +112,7 @@ const ProductForm = () => {
           setForm((prev) => ({ ...prev, categoryId: categoryData[0].id }))
         }
       } catch (err) {
-        setLoadError('ডেটা লোড করতে সমস্যা হয়েছে।')
+        setLoadError('There was a problem loading the data.')
         console.error(err)
       } finally {
         setIsLoading(false)
@@ -122,8 +131,13 @@ const ProductForm = () => {
   }
 
   async function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? [])
+    const remainingSlots = Math.max(0, 4 - form.images.length)
+    const files = Array.from(e.target.files ?? []).slice(0, remainingSlots)
     if (files.length === 0) return
+
+    if ((e.target.files?.length ?? 0) > remainingSlots) {
+      toast.error('A product can have up to 4 images.')
+    }
 
     setIsUploading(true)
     try {
@@ -133,7 +147,7 @@ const ProductForm = () => {
         images: [...prev.images, ...results.map((r) => r.secureUrl)],
       }))
     } catch (err) {
-      toast.error('ছবি আপলোড ব্যর্থ হয়েছে।')
+      toast.error('Image upload failed.')
       console.error(err)
     } finally {
       setIsUploading(false)
@@ -156,12 +170,12 @@ const ProductForm = () => {
       !form.price ||
       !form.stock
     ) {
-      toast.error('নাম, স্লাগ, SKU, ক্যাটাগরি, দাম এবং স্টক আবশ্যক।')
+      toast.error('Name, slug, SKU, category, price, and stock are required.')
       return
     }
 
     if (form.images.length === 0) {
-      toast.error('অন্তত একটা ছবি যোগ করুন।')
+      toast.error('Please add at least one image.')
       return
     }
 
@@ -170,12 +184,12 @@ const ProductForm = () => {
     const discountPrice = form.discountPrice ? Number(form.discountPrice) : undefined
 
     if (Number.isNaN(price) || Number.isNaN(stock)) {
-      toast.error('দাম এবং স্টক সংখ্যা হতে হবে।')
+      toast.error('Price and stock must be numeric values.')
       return
     }
 
     if (discountPrice !== undefined && discountPrice >= price) {
-      toast.error('ডিসকাউন্ট প্রাইস মূল দামের চেয়ে কম হতে হবে।')
+      toast.error('Discount price must be lower than the regular price.')
       return
     }
 
@@ -193,6 +207,9 @@ const ProductForm = () => {
         sku: form.sku.trim(),
         categoryId: form.categoryId,
         images: form.images,
+        brand: form.brand.trim() || undefined,
+        keywords: form.keywords.split(',').map((value) => value.trim()).filter(Boolean),
+        tags: form.tags.split(',').map((value) => value.trim()).filter(Boolean),
         featured: form.featured,
         active: form.active,
         seoTitle: form.seoTitle.trim() || undefined,
@@ -202,15 +219,15 @@ const ProductForm = () => {
 
       if (isEditMode && id) {
         await updateProduct(id, payload)
-        toast.success('প্রোডাক্ট আপডেট হয়েছে।')
+        toast.success('Product updated successfully.')
       } else {
         await createProduct({ ...payload, createdAt: now })
-        toast.success('নতুন প্রোডাক্ট তৈরি হয়েছে।')
+        toast.success('New product created successfully.')
       }
 
       navigate('/admin/products')
     } catch (err) {
-      toast.error('সংরক্ষণ করতে সমস্যা হয়েছে।')
+      toast.error('There was a problem saving the product.')
       console.error(err)
     } finally {
       setIsSaving(false)
@@ -219,8 +236,8 @@ const ProductForm = () => {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Spinner size="lg" />
+      <div className="mx-auto max-w-4xl py-6">
+        <FormSkeleton />
       </div>
     )
   }
@@ -233,20 +250,20 @@ const ProductForm = () => {
     <>
       <Helmet>
         <title>
-          {isEditMode ? 'প্রোডাক্ট এডিট' : 'নতুন প্রোডাক্ট'} — Admin — Sirat Organic Mart
+          {isEditMode ? 'Edit Product' : 'New Product'} — Admin — Shoplexᴮᴰ
         </title>
       </Helmet>
 
       <h1 className="mb-6 text-xl font-semibold text-[color:var(--color-deep-green)]">
-        {isEditMode ? 'প্রোডাক্ট এডিট করুন' : 'নতুন প্রোডাক্ট যোগ করুন'}
+        {isEditMode ? 'Edit product' : 'Add new product'}
       </h1>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <Card className="flex flex-col gap-4">
-          <h2 className="font-medium">মূল তথ্য</h2>
+          <h2 className="font-medium">Basic information</h2>
 
           <Input
-            label="নাম"
+            label="Name"
             required
             value={form.name}
             onChange={(e) => handleNameChange(e.target.value)}
@@ -254,11 +271,11 @@ const ProductForm = () => {
           />
 
           <Input
-            label="স্লাগ"
+            label="Slug"
             required
             value={form.slug}
             onChange={(e) => setForm((prev) => ({ ...prev, slug: e.target.value }))}
-            hint="URL-এ ব্যবহার হবে, যেমন: /product/এই-স্লাগ"
+            hint="Used in the URL, for example: /product/this-slug"
             disabled={isSaving}
           />
 
@@ -273,7 +290,7 @@ const ProductForm = () => {
 
             <div className="w-full">
               <label className="mb-1.5 block text-sm font-medium text-[color:var(--color-text-primary)]">
-                ক্যাটাগরি<span className="ml-0.5 text-red-600">*</span>
+                Category<span className="ml-0.5 text-red-600">*</span>
               </label>
               <select
                 required
@@ -283,7 +300,7 @@ const ProductForm = () => {
                 className="h-11 w-full rounded-lg border border-gray-300 bg-white px-3.5 text-base focus:border-[color:var(--color-emerald)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-emerald)]"
               >
                 <option value="" disabled>
-                  ক্যাটাগরি বাছাই করুন
+                  Select a category
                 </option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -295,19 +312,42 @@ const ProductForm = () => {
           </div>
 
           <Input
-            label="সংক্ষিপ্ত বিবরণ"
+            label="Short description"
             required
             value={form.shortDescription}
             onChange={(e) =>
               setForm((prev) => ({ ...prev, shortDescription: e.target.value }))
             }
-            hint="প্রোডাক্ট কার্ডে দেখানো হবে"
+            hint="Shown on the product card"
             disabled={isSaving}
           />
 
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Input
+              label="Brand"
+              value={form.brand}
+              onChange={(e) => setForm((prev) => ({ ...prev, brand: e.target.value }))}
+              disabled={isSaving}
+            />
+            <Input
+              label="Keywords"
+              value={form.keywords}
+              onChange={(e) => setForm((prev) => ({ ...prev, keywords: e.target.value }))}
+              hint="Comma-separated"
+              disabled={isSaving}
+            />
+            <Input
+              label="Tags"
+              value={form.tags}
+              onChange={(e) => setForm((prev) => ({ ...prev, tags: e.target.value }))}
+              hint="Comma-separated"
+              disabled={isSaving}
+            />
+          </div>
+
           <div className="w-full">
             <label className="mb-1.5 block text-sm font-medium text-[color:var(--color-text-primary)]">
-              বিস্তারিত বিবরণ
+              Full description
             </label>
             <textarea
               rows={6}
@@ -319,18 +359,17 @@ const ProductForm = () => {
               className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-base focus:border-[color:var(--color-emerald)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-emerald)] disabled:cursor-not-allowed disabled:bg-gray-100"
             />
             <p className="mt-1 text-xs text-[color:var(--color-text-secondary)]">
-              আপাতত সাধারণ টেক্সট — রিচ-টেক্সট এডিটর (react-quill/jodit-react) পরে যোগ করা
-              যাবে।
+              Plain text is used for now; a rich-text editor can be added later.
             </p>
           </div>
         </Card>
 
         <Card className="flex flex-col gap-4">
-          <h2 className="font-medium">দাম ও স্টক</h2>
+          <h2 className="font-medium">Pricing & stock</h2>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Input
-              label="দাম (৳)"
+              label="Price (৳)"
               type="number"
               required
               min={0}
@@ -339,18 +378,18 @@ const ProductForm = () => {
               disabled={isSaving}
             />
             <Input
-              label="ডিসকাউন্ট প্রাইস (৳)"
+              label="Discount price (৳)"
               type="number"
               min={0}
               value={form.discountPrice}
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, discountPrice: e.target.value }))
               }
-              hint="ঐচ্ছিক"
+              hint="Optional"
               disabled={isSaving}
             />
             <Input
-              label="স্টক"
+              label="Stock"
               type="number"
               required
               min={0}
@@ -362,7 +401,11 @@ const ProductForm = () => {
         </Card>
 
         <Card className="flex flex-col gap-4">
-          <h2 className="font-medium">ছবি</h2>
+          <h2 className="font-medium">Images</h2>
+
+          <p className="text-sm text-[color:var(--color-text-secondary)]">
+            Upload up to 4 accurate product images. The first image is used as the main image.
+          </p>
 
           {form.images.length > 0 && (
             <div className="flex flex-wrap gap-3">
@@ -378,7 +421,7 @@ const ProductForm = () => {
                     type="button"
                     onClick={() => removeImage(url)}
                     disabled={isSaving}
-                    aria-label="ছবি সরান"
+                    aria-label="Remove image"
                     className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white hover:bg-red-700"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -394,15 +437,15 @@ const ProductForm = () => {
               accept="image/*"
               multiple
               onChange={handleImageSelect}
-              disabled={isSaving || isUploading}
+              disabled={isSaving || isUploading || form.images.length >= 4}
               className="text-sm"
             />
-            {isUploading && <Spinner size="sm" />}
+            {isUploading && <span className="inline-block h-4 w-4 animate-pulse rounded-full bg-[color:var(--color-emerald)]/70" />}
           </div>
         </Card>
 
         <Card className="flex flex-col gap-3">
-          <h2 className="font-medium">ফ্ল্যাগ</h2>
+          <h2 className="font-medium">Flags</h2>
 
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -412,7 +455,7 @@ const ProductForm = () => {
               disabled={isSaving}
               className="h-4 w-4 rounded border-gray-300"
             />
-            ফিচারড (হোমপেজে দেখাবে)
+            Featured (shown on homepage)
           </label>
 
           <label className="flex items-center gap-2 text-sm">
@@ -423,21 +466,21 @@ const ProductForm = () => {
               disabled={isSaving}
               className="h-4 w-4 rounded border-gray-300"
             />
-            অ্যাক্টিভ (স্টোরফ্রন্টে দেখাবে)
+            Active (shown on storefront)
           </label>
         </Card>
 
         <Card className="flex flex-col gap-4">
-          <h2 className="font-medium">SEO (ঐচ্ছিক)</h2>
+          <h2 className="font-medium">SEO (optional)</h2>
 
           <Input
-            label="SEO টাইটেল"
+            label="SEO title"
             value={form.seoTitle}
             onChange={(e) => setForm((prev) => ({ ...prev, seoTitle: e.target.value }))}
             disabled={isSaving}
           />
           <Input
-            label="SEO বিবরণ"
+            label="SEO description"
             value={form.seoDescription}
             onChange={(e) =>
               setForm((prev) => ({ ...prev, seoDescription: e.target.value }))
@@ -448,7 +491,7 @@ const ProductForm = () => {
 
         <div className="flex gap-3">
           <Button type="submit" isLoading={isSaving} disabled={isUploading}>
-            সংরক্ষণ করুন
+            Save
           </Button>
           <Button
             type="button"
@@ -456,7 +499,7 @@ const ProductForm = () => {
             onClick={() => navigate('/admin/products')}
             disabled={isSaving}
           >
-            বাতিল
+            Cancel
           </Button>
         </div>
       </form>

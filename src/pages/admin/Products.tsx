@@ -14,7 +14,7 @@ import Card from '../../components/common/Card'
 import Button from '../../components/common/Button'
 import Input from '../../components/common/Input'
 import Badge from '../../components/common/Badge'
-import Spinner from '../../components/common/Spinner'
+import { TableSkeleton } from '../../components/common/Skeleton'
 
 const Products = () => {
   const [products, setProducts] = useState<Product[]>([])
@@ -39,7 +39,7 @@ const Products = () => {
       setProducts(productData)
       setCategories(categoryData)
     } catch (err) {
-      setError('প্রোডাক্ট লোড করতে সমস্যা হয়েছে।')
+      setError('There was a problem loading products.')
       console.error(err)
     } finally {
       setIsLoading(false)
@@ -69,16 +69,16 @@ const Products = () => {
   }, [products, searchQuery, categoryFilter])
 
   async function handleArchive(product: Product) {
-    if (!window.confirm(`"${product.name}" আর্কাইভ করতে চান? এটা স্টোরফ্রন্ট থেকে হাইড হয়ে যাবে।`))
+    if (!window.confirm(`Archive "${product.name}"? It will be hidden from the storefront.`))
       return
 
     setArchivingId(product.id)
     try {
       await archiveProduct(product.id)
-      toast.success('প্রোডাক্ট আর্কাইভ হয়েছে।')
+      toast.success('Product archived successfully.')
       await loadData()
     } catch (err) {
-      toast.error('আর্কাইভ করতে সমস্যা হয়েছে।')
+      toast.error('There was a problem archiving the product.')
       console.error(err)
     } finally {
       setArchivingId(null)
@@ -88,7 +88,7 @@ const Products = () => {
   async function handleDelete(product: Product) {
     if (
       !window.confirm(
-        `"${product.name}" স্থায়ীভাবে ডিলিট করতে চান? এটা আর ফেরত আনা যাবে না।`
+        `Permanently delete "${product.name}"? This cannot be undone.`
       )
     )
       return
@@ -96,10 +96,10 @@ const Products = () => {
     setDeletingId(product.id)
     try {
       await deleteProduct(product.id)
-      toast.success('প্রোডাক্ট ডিলিট হয়েছে।')
+      toast.success('Product deleted successfully.')
       await loadData()
     } catch (err) {
-      toast.error('ডিলিট করতে সমস্যা হয়েছে।')
+      toast.error('There was a problem deleting the product.')
       console.error(err)
     } finally {
       setDeletingId(null)
@@ -109,25 +109,32 @@ const Products = () => {
   return (
     <>
       <Helmet>
-        <title>প্রোডাক্ট ম্যানেজমেন্ট — Admin — Sirat Organic Mart</title>
+        <title>Product management — Admin — Shoplexᴮᴰ</title>
       </Helmet>
 
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-semibold text-[color:var(--color-deep-green)]">
-          প্রোডাক্ট ম্যানেজমেন্ট
+          Product management
         </h1>
-        <Link to="/admin/products/new">
-          <Button size="sm" leftIcon={<Plus className="h-4 w-4" />}>
-            নতুন প্রোডাক্ট
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link to="/admin/products/new">
+            <Button size="sm" leftIcon={<Plus className="h-4 w-4" />}>
+              New product
+            </Button>
+          </Link>
+          <Link to="/admin/products/new-affiliate">
+            <Button size="sm" variant="outline" leftIcon={<Plus className="h-4 w-4" />}>
+              New affiliate product
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--color-text-secondary)]" />
           <Input
-            placeholder="নাম বা SKU দিয়ে খুঁজুন..."
+            placeholder="Search by name or SKU..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -139,7 +146,7 @@ const Products = () => {
           onChange={(e) => setCategoryFilter(e.target.value)}
           className="h-11 rounded-lg border border-gray-300 bg-white px-3.5 text-base focus:border-[color:var(--color-emerald)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-emerald)]"
         >
-          <option value="all">সব ক্যাটাগরি</option>
+          <option value="all">All categories</option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -149,26 +156,24 @@ const Products = () => {
       </div>
 
       {isLoading ? (
-        <div className="flex min-h-[30vh] items-center justify-center">
-          <Spinner size="lg" />
-        </div>
+        <TableSkeleton rows={5} columns={6} />
       ) : error ? (
         <p className="py-16 text-center text-red-600">{error}</p>
       ) : filteredProducts.length === 0 ? (
         <p className="py-16 text-center text-[color:var(--color-text-secondary)]">
-          কোনো প্রোডাক্ট পাওয়া যায়নি।
+          No products found.
         </p>
       ) : (
         <Card padded={false} className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-gray-100 text-xs text-[color:var(--color-text-secondary)]">
               <tr>
-                <th className="px-4 py-3 font-medium">প্রোডাক্ট</th>
-                <th className="px-4 py-3 font-medium">ক্যাটাগরি</th>
-                <th className="px-4 py-3 font-medium">দাম</th>
-                <th className="px-4 py-3 font-medium">স্টক</th>
-                <th className="px-4 py-3 font-medium">স্ট্যাটাস</th>
-                <th className="px-4 py-3 font-medium text-right">অ্যাকশন</th>
+                <th className="px-4 py-3 font-medium">Product</th>
+                <th className="px-4 py-3 font-medium">Category</th>
+                <th className="px-4 py-3 font-medium">Price</th>
+                <th className="px-4 py-3 font-medium">Stock</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -198,38 +203,49 @@ const Products = () => {
                     {categoryNameById.get(product.categoryId) ?? '—'}
                   </td>
                   <td className="px-4 py-3">
-                    {product.discountPrice ? (
+                    {product.price === undefined ? (
+                      <span>Not set</span>
+                    ) : product.discountPrice ? (
                       <span>
                         <span className="font-medium text-[color:var(--color-deep-green)]">
-                          ৳{product.discountPrice}
+                          {product.priceCurrency ? `${product.priceCurrency} ` : '৳'}{product.discountPrice}
                         </span>{' '}
                         <span className="text-xs text-[color:var(--color-text-secondary)] line-through">
                           ৳{product.price}
                         </span>
                       </span>
                     ) : (
-                      <span>৳{product.price}</span>
+                      <span>
+                        {product.priceCurrency ? `${product.priceCurrency} ` : '৳'}{product.price}
+                      </span>
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={product.stock <= 5 ? 'font-medium text-amber-600' : ''}>
-                      {product.stock}
-                    </span>
+                    {product.type === 'affiliate' ? (
+                      <span>—</span>
+                    ) : (
+                      <span className={(product.stock ?? 0) <= 5 ? 'font-medium text-amber-600' : ''}>
+                        {product.stock ?? 0}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1.5">
                       <Badge variant={product.active ? 'success' : 'neutral'}>
-                        {product.active ? 'অ্যাক্টিভ' : 'আর্কাইভড'}
+                        {product.active ? 'Active' : 'Archived'}
                       </Badge>
-                      {product.featured && <Badge variant="info">ফিচারড</Badge>}
+                      {product.featured && <Badge variant="info">Featured</Badge>}
+                      {product.type === 'affiliate' && <Badge variant="info">Affiliate</Badge>}
                     </div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
                       <Link
-                        to={`/admin/products/${product.id}`}
+                        to={product.type === 'affiliate'
+                          ? `/admin/products/${product.id}/affiliate`
+                          : `/admin/products/${product.id}`}
                         className="rounded-lg p-2 text-[color:var(--color-text-secondary)] hover:bg-gray-100"
-                        aria-label="এডিট করুন"
+                        aria-label="Edit product"
                       >
                         <Pencil className="h-4 w-4" />
                       </Link>
@@ -238,10 +254,10 @@ const Products = () => {
                         onClick={() => handleArchive(product)}
                         disabled={archivingId === product.id || !product.active}
                         className="rounded-lg p-2 text-amber-600 hover:bg-amber-50 disabled:opacity-40"
-                        aria-label="আর্কাইভ করুন"
+                        aria-label="Archive product"
                       >
                         {archivingId === product.id ? (
-                          <Spinner size="sm" />
+                          <span className="inline-block h-4 w-4 animate-pulse rounded-full bg-amber-500/70" />
                         ) : (
                           <Archive className="h-4 w-4" />
                         )}
@@ -251,10 +267,10 @@ const Products = () => {
                         onClick={() => handleDelete(product)}
                         disabled={deletingId === product.id}
                         className="rounded-lg p-2 text-red-600 hover:bg-red-50 disabled:opacity-50"
-                        aria-label="ডিলিট করুন"
+                        aria-label="Delete product"
                       >
                         {deletingId === product.id ? (
-                          <Spinner size="sm" />
+                          <span className="inline-block h-4 w-4 animate-pulse rounded-full bg-red-500/70" />
                         ) : (
                           <Trash2 className="h-4 w-4" />
                         )}

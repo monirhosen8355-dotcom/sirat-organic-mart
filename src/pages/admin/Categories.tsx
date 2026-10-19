@@ -14,7 +14,7 @@ import Card from '../../components/common/Card'
 import Button from '../../components/common/Button'
 import Input from '../../components/common/Input'
 import Badge from '../../components/common/Badge'
-import Spinner from '../../components/common/Spinner'
+import { ListSkeleton } from '../../components/common/Skeleton'
 
 function slugify(name: string): string {
   return name
@@ -30,6 +30,8 @@ interface CategoryFormState {
   imageUrl: string
   order: number
   active: boolean
+  showOnHomepage: boolean
+  homeOrder: number
 }
 
 const emptyForm: CategoryFormState = {
@@ -38,6 +40,8 @@ const emptyForm: CategoryFormState = {
   imageUrl: '',
   order: 0,
   active: true,
+  showOnHomepage: false,
+  homeOrder: 0,
 }
 
 const Categories = () => {
@@ -59,7 +63,7 @@ const Categories = () => {
       const data = await getAllCategories()
       setCategories(data)
     } catch (err) {
-      setError('ক্যাটাগরি লোড করতে সমস্যা হয়েছে।')
+      setError('There was a problem loading categories.')
       console.error(err)
     } finally {
       setIsLoading(false)
@@ -84,6 +88,8 @@ const Categories = () => {
       imageUrl: category.imageUrl ?? '',
       order: category.order,
       active: category.active,
+      showOnHomepage: category.showOnHomepage ?? false,
+      homeOrder: category.homeOrder ?? 0,
     })
     setIsFormOpen(true)
   }
@@ -111,7 +117,7 @@ const Categories = () => {
       const result = await uploadImageToCloudinary(file)
       setForm((prev) => ({ ...prev, imageUrl: result.secureUrl }))
     } catch (err) {
-      toast.error('ছবি আপলোড ব্যর্থ হয়েছে।')
+      toast.error('Image upload failed.')
       console.error(err)
     } finally {
       setIsUploading(false)
@@ -123,7 +129,7 @@ const Categories = () => {
     e.preventDefault()
 
     if (!form.name.trim() || !form.slug.trim()) {
-      toast.error('নাম এবং স্লাগ দুটোই আবশ্যক।')
+      toast.error('Both the name and slug are required.')
       return
     }
 
@@ -135,20 +141,22 @@ const Categories = () => {
         imageUrl: form.imageUrl || undefined,
         order: form.order,
         active: form.active,
+        showOnHomepage: form.showOnHomepage,
+        homeOrder: form.homeOrder,
       }
 
       if (editingId) {
         await updateCategory(editingId, payload)
-        toast.success('ক্যাটাগরি আপডেট হয়েছে।')
+        toast.success('Category updated successfully.')
       } else {
         await createCategory(payload)
-        toast.success('নতুন ক্যাটাগরি তৈরি হয়েছে।')
+        toast.success('New category created successfully.')
       }
 
       closeForm()
       await loadCategories()
     } catch (err) {
-      toast.error('সংরক্ষণ করতে সমস্যা হয়েছে।')
+      toast.error('There was a problem saving the category.')
       console.error(err)
     } finally {
       setIsSaving(false)
@@ -156,15 +164,15 @@ const Categories = () => {
   }
 
   async function handleDelete(category: Category) {
-    if (!window.confirm(`"${category.name}" ক্যাটাগরিটি ডিলিট করতে চান?`)) return
+    if (!window.confirm(`Are you sure you want to delete the "${category.name}" category?`)) return
 
     setDeletingId(category.id)
     try {
       await deleteCategory(category.id)
-      toast.success('ক্যাটাগরি ডিলিট হয়েছে।')
+      toast.success('Category deleted successfully.')
       await loadCategories()
     } catch (err) {
-      toast.error('ডিলিট করতে সমস্যা হয়েছে।')
+      toast.error('There was a problem deleting the category.')
       console.error(err)
     } finally {
       setDeletingId(null)
@@ -174,15 +182,15 @@ const Categories = () => {
   return (
     <>
       <Helmet>
-        <title>ক্যাটাগরি ম্যানেজমেন্ট — Admin — Sirat Organic Mart</title>
+        <title>Category management — Admin — Shoplexᴮᴰ</title>
       </Helmet>
 
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-semibold text-[color:var(--color-deep-green)]">
-          ক্যাটাগরি ম্যানেজমেন্ট
+          Category management
         </h1>
         <Button size="sm" leftIcon={<Plus className="h-4 w-4" />} onClick={openCreateForm}>
-          নতুন ক্যাটাগরি
+          New category
         </Button>
       </div>
 
@@ -190,13 +198,13 @@ const Categories = () => {
         <Card className="mb-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-medium">
-              {editingId ? 'ক্যাটাগরি এডিট করুন' : 'নতুন ক্যাটাগরি যোগ করুন'}
+              {editingId ? 'Edit category' : 'Add a new category'}
             </h2>
             <button
               type="button"
               onClick={closeForm}
               className="text-[color:var(--color-text-secondary)] hover:text-black"
-              aria-label="বন্ধ করুন"
+              aria-label="Close"
             >
               <X className="h-5 w-5" />
             </button>
@@ -204,7 +212,7 @@ const Categories = () => {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input
-              label="নাম"
+              label="Name"
               required
               value={form.name}
               onChange={(e) => handleNameChange(e.target.value)}
@@ -212,17 +220,17 @@ const Categories = () => {
             />
 
             <Input
-              label="স্লাগ"
+              label="Slug"
               required
               value={form.slug}
               onChange={(e) => setForm((prev) => ({ ...prev, slug: e.target.value }))}
-              hint="URL-এ ব্যবহার হবে, যেমন: /category/এই-স্লাগ"
+              hint="Used in the URL, for example: /category/this-slug"
               disabled={isSaving}
             />
 
             <div>
               <label className="mb-1.5 block text-sm font-medium text-[color:var(--color-text-primary)]">
-                ছবি
+                Image
               </label>
               <div className="flex items-center gap-3">
                 {form.imageUrl && (
@@ -239,12 +247,12 @@ const Categories = () => {
                   disabled={isSaving || isUploading}
                   className="text-sm"
                 />
-                {isUploading && <Spinner size="sm" />}
+                {isUploading && <span className="inline-block h-4 w-4 animate-pulse rounded-full bg-[color:var(--color-emerald)]/70" />}
               </div>
             </div>
 
             <Input
-              label="অর্ডার (সাজানোর ক্রম)"
+              label="Order (display sequence)"
               type="number"
               value={form.order}
               onChange={(e) =>
@@ -261,15 +269,36 @@ const Categories = () => {
                 disabled={isSaving}
                 className="h-4 w-4 rounded border-gray-300"
               />
-              অ্যাক্টিভ (স্টোরফ্রন্টে দেখাবে)
+              Active (visible on storefront)
             </label>
+
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={form.showOnHomepage}
+                onChange={(e) => setForm((prev) => ({ ...prev, showOnHomepage: e.target.checked }))}
+                disabled={isSaving}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              Show on homepage
+            </label>
+
+            <Input
+              label="Homepage display order"
+              type="number"
+              value={form.homeOrder}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, homeOrder: Number(e.target.value) }))
+              }
+              disabled={isSaving}
+            />
 
             <div className="flex gap-3">
               <Button type="submit" isLoading={isSaving} disabled={isUploading}>
-                সংরক্ষণ করুন
+                Save
               </Button>
               <Button type="button" variant="ghost" onClick={closeForm} disabled={isSaving}>
-                বাতিল
+                Cancel
               </Button>
             </div>
           </form>
@@ -277,14 +306,12 @@ const Categories = () => {
       )}
 
       {isLoading ? (
-        <div className="flex min-h-[30vh] items-center justify-center">
-          <Spinner size="lg" />
-        </div>
+        <ListSkeleton rows={4} />
       ) : error ? (
         <p className="py-16 text-center text-red-600">{error}</p>
       ) : categories.length === 0 ? (
         <p className="py-16 text-center text-[color:var(--color-text-secondary)]">
-          এখনো কোনো ক্যাটাগরি যোগ করা হয়নি।
+          No categories have been added yet.
         </p>
       ) : (
         <Card padded={false}>
@@ -308,20 +335,20 @@ const Categories = () => {
                   <div>
                     <p className="font-medium">{category.name}</p>
                     <p className="text-xs text-[color:var(--color-text-secondary)]">
-                      /{category.slug} · ক্রম: {category.order}
+                      /{category.slug} · Order: {category.order}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3">
                   <Badge variant={category.active ? 'success' : 'neutral'}>
-                    {category.active ? 'অ্যাক্টিভ' : 'ইনঅ্যাক্টিভ'}
+                    {category.active ? 'Active' : 'Inactive'}
                   </Badge>
                   <button
                     type="button"
                     onClick={() => openEditForm(category)}
                     className="rounded-lg p-2 text-[color:var(--color-text-secondary)] hover:bg-gray-100"
-                    aria-label="এডিট করুন"
+                    aria-label="Edit"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
@@ -330,10 +357,10 @@ const Categories = () => {
                     onClick={() => handleDelete(category)}
                     disabled={deletingId === category.id}
                     className="rounded-lg p-2 text-red-600 hover:bg-red-50 disabled:opacity-50"
-                    aria-label="ডিলিট করুন"
+                    aria-label="Delete"
                   >
                     {deletingId === category.id ? (
-                      <Spinner size="sm" />
+                      <span className="inline-block h-4 w-4 animate-pulse rounded-full bg-red-500/70" />
                     ) : (
                       <Trash2 className="h-4 w-4" />
                     )}

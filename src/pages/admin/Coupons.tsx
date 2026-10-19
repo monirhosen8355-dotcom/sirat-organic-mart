@@ -13,7 +13,7 @@ import Card from '../../components/common/Card'
 import Button from '../../components/common/Button'
 import Input from '../../components/common/Input'
 import Badge from '../../components/common/Badge'
-import Spinner from '../../components/common/Spinner'
+import { ListSkeleton } from '../../components/common/Skeleton'
 
 interface CouponFormState {
   code: string
@@ -44,9 +44,7 @@ function endOfDay(dateString: string): number {
 
 function formatDate(timestamp?: number): string {
   if (!timestamp) return '—'
-  return new Date(timestamp).toLocaleDateString('bn-BD', {
-    year: 'numeric',
-    month: 'short',
+  return new Date(timestamp).toLocaleDateString('en-US', {
     day: 'numeric',
   })
 }
@@ -69,7 +67,7 @@ const Coupons = () => {
       const data = await getAllCouponsAdmin()
       setCoupons(data)
     } catch (err) {
-      setError('কুপন লোড করতে সমস্যা হয়েছে।')
+      setError('There was a problem loading coupons.')
       console.error(err)
     } finally {
       setIsLoading(false)
@@ -112,17 +110,17 @@ const Coupons = () => {
     e.preventDefault()
 
     if (!form.code.trim()) {
-      toast.error('কুপন কোড আবশ্যক।')
+      toast.error('Coupon code is required.')
       return
     }
 
     if (form.discountValue <= 0) {
-      toast.error('ছাড়ের পরিমাণ শূন্যের বেশি হতে হবে।')
+      toast.error('Discount value must be greater than zero.')
       return
     }
 
     if (form.discountType === 'percentage' && form.discountValue > 100) {
-      toast.error('পার্সেন্টেজ ছাড় ১০০-এর বেশি হতে পারবে না।')
+      toast.error('Percentage discount cannot exceed 100%.')
       return
     }
 
@@ -139,16 +137,16 @@ const Coupons = () => {
 
       if (editingId) {
         await updateCoupon(editingId, payload)
-        toast.success('কুপন আপডেট হয়েছে।')
+        toast.success('Coupon updated successfully.')
       } else {
         await createCoupon(payload)
-        toast.success('নতুন কুপন তৈরি হয়েছে।')
+        toast.success('New coupon created successfully.')
       }
 
       closeForm()
       await loadCoupons()
     } catch (err) {
-      toast.error('সংরক্ষণ করতে সমস্যা হয়েছে।')
+      toast.error('There was a problem saving the coupon.')
       console.error(err)
     } finally {
       setIsSaving(false)
@@ -156,15 +154,15 @@ const Coupons = () => {
   }
 
   async function handleDelete(coupon: Coupon) {
-    if (!window.confirm(`"${coupon.code}" কুপনটি ডিলিট করতে চান?`)) return
+    if (!window.confirm(`Are you sure you want to delete the "${coupon.code}" coupon?`)) return
 
     setDeletingId(coupon.id)
     try {
       await deleteCoupon(coupon.id)
-      toast.success('কুপন ডিলিট হয়েছে।')
+      toast.success('Coupon deleted successfully.')
       await loadCoupons()
     } catch (err) {
-      toast.error('ডিলিট করতে সমস্যা হয়েছে।')
+      toast.error('There was a problem deleting the coupon.')
       console.error(err)
     } finally {
       setDeletingId(null)
@@ -174,15 +172,15 @@ const Coupons = () => {
   return (
     <>
       <Helmet>
-        <title>কুপন ম্যানেজমেন্ট — Admin — Sirat Organic Mart</title>
+        <title>Coupon management — Admin — Shoplexᴮᴰ</title>
       </Helmet>
 
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-semibold text-[color:var(--color-deep-green)]">
-          কুপন ম্যানেজমেন্ট
+          Coupon management
         </h1>
         <Button size="sm" leftIcon={<Plus className="h-4 w-4" />} onClick={openCreateForm}>
-          নতুন কুপন
+          New coupon
         </Button>
       </div>
 
@@ -302,9 +300,7 @@ const Coupons = () => {
       )}
 
       {isLoading ? (
-        <div className="flex min-h-[30vh] items-center justify-center">
-          <Spinner size="lg" />
-        </div>
+        <ListSkeleton rows={4} />
       ) : error ? (
         <p className="py-16 text-center text-red-600">{error}</p>
       ) : coupons.length === 0 ? (
@@ -348,7 +344,7 @@ const Coupons = () => {
                     aria-label="ডিলিট করুন"
                   >
                     {deletingId === coupon.id ? (
-                      <Spinner size="sm" />
+                      <span className="inline-block h-4 w-4 animate-pulse rounded-full bg-red-500/70" />
                     ) : (
                       <Trash2 className="h-4 w-4" />
                     )}

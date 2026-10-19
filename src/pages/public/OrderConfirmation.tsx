@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { CheckCircle2, Phone, MapPin, StickyNote } from 'lucide-react'
 import Card from '../../components/common/Card'
 import Button from '../../components/common/Button'
-import Spinner from '../../components/common/Spinner'
+import { OrderDetailSkeleton } from '../../components/common/Skeleton'
 import OrderStatusBadge from '../../components/common/OrderStatusBadge'
 import { getOrderById } from '../../services/orders/orderService'
 import { getThumbnailUrl } from '../../lib/cloudinary/transform'
@@ -50,21 +50,17 @@ const OrderConfirmation = () => {
   }, [order])
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Spinner label="অর্ডার লোড হচ্ছে..." />
-      </div>
-    )
+    return <OrderDetailSkeleton />
   }
 
   if (notFound || !order) {
     return (
       <div className="mx-auto flex min-h-[50vh] max-w-md flex-col items-center justify-center gap-4 px-4 text-center">
         <p className="text-lg font-medium text-[color:var(--color-text-primary)]">
-          এই অর্ডারটি খুঁজে পাওয়া যায়নি।
+          This order could not be found.
         </p>
         <Link to="/">
-          <Button variant="primary">হোমপেজে ফিরে যান</Button>
+          <Button variant="primary">Back to homepage</Button>
         </Link>
       </div>
     )
@@ -74,15 +70,15 @@ const OrderConfirmation = () => {
     <div className="mx-auto max-w-2xl px-4 py-8">
       <div className="mb-6 flex flex-col items-center text-center">
         <CheckCircle2 className="mb-3 h-14 w-14 text-[color:var(--color-emerald)]" aria-hidden="true" />
-        <h1 className="text-xl font-semibold text-[color:var(--color-text-primary)]">অর্ডার সফল হয়েছে!</h1>
+        <h1 className="text-xl font-semibold text-[color:var(--color-text-primary)]">Order placed successfully!</h1>
         <p className="mt-1 text-sm text-[color:var(--color-text-secondary)]">
-          অর্ডার নম্বর: <span className="font-medium">#{order.id.slice(-8).toUpperCase()}</span>
+          Order ID: <span className="break-all font-mono font-medium">{order.id}</span>
         </p>
       </div>
 
       <Card className="mb-4 flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-[color:var(--color-text-secondary)]">বর্তমান অবস্থা</span>
+          <span className="text-sm text-[color:var(--color-text-secondary)]">Current status</span>
           <OrderStatusBadge status={order.status} />
         </div>
         <div className="flex items-start gap-2 border-t border-gray-100 pt-3 text-sm">
@@ -105,7 +101,7 @@ const OrderConfirmation = () => {
       </Card>
 
       <Card className="mb-4">
-        <h2 className="mb-3 font-medium">অর্ডার আইটেম</h2>
+        <h2 className="mb-3 font-medium">Order items</h2>
         <div className="flex flex-col gap-3">
           {order.items.map((item) => (
             <div key={`${item.productId}-${item.variantId ?? ''}`} className="flex gap-3">

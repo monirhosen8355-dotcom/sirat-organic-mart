@@ -9,6 +9,7 @@ const GA_EVENT_NAME_MAP: Record<string, string> = {
   AddToCart: 'add_to_cart',
   InitiateCheckout: 'begin_checkout',
   Purchase: 'purchase',
+  AffiliateClick: 'affiliate_click',
 }
 
 export interface AnalyticsConfig {

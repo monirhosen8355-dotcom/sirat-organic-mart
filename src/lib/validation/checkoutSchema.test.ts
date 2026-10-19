@@ -4,6 +4,7 @@ import { checkoutSchema } from './checkoutSchema'
 const validData = {
   customerName: 'রহিম উদ্দিন',
   customerPhone: '01712345678',
+  deliveryZone: 'dhaka',
   deliveryAddress: 'বাসা ১২, রোড ৫, ধানমন্ডি, ঢাকা',
   deliveryNote: '',
 }
@@ -45,5 +46,22 @@ describe('checkoutSchema', () => {
 const { deliveryNote, ...withoutNote } = validData
     const result = checkoutSchema.safeParse(withoutNote)
     expect(result.success).toBe(true)
+  })
+
+  it('outside deliveryZone-ও গ্রহণ করে', () => {
+    const result = checkoutSchema.safeParse({ ...validData, deliveryZone: 'outside' })
+    expect(result.success).toBe(true)
+  })
+
+  it('deliveryZone না দিলে প্রত্যাখ্যান করে', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { deliveryZone, ...withoutZone } = validData
+    const result = checkoutSchema.safeParse(withoutZone)
+    expect(result.success).toBe(false)
+  })
+
+  it('অচেনা deliveryZone প্রত্যাখ্যান করে', () => {
+    const result = checkoutSchema.safeParse({ ...validData, deliveryZone: 'chittagong' })
+    expect(result.success).toBe(false)
   })
 })

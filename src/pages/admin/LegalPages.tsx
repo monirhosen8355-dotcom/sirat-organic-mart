@@ -7,7 +7,7 @@ import type { LegalPage, LegalPageSlug } from '../../types'
 import Card from '../../components/common/Card'
 import Button from '../../components/common/Button'
 import Input from '../../components/common/Input'
-import Spinner from '../../components/common/Spinner'
+import { ListSkeleton } from '../../components/common/Skeleton'
 
 // এই ৬টা পেজ প্রজেক্টে স্থায়ীভাবে নির্দিষ্ট — routes/Footer-এ আগে থেকেই লিংক করা আছে,
 // তাই অ্যাডমিন নতুন slug যোগ/বাদ দিতে পারবে না, শুধু টাইটেল/কন্টেন্ট এডিট করতে পারবে।
@@ -110,7 +110,7 @@ const LegalPages = () => {
   return (
     <>
       <Helmet>
-        <title>লিগ্যাল পেজ — Admin — Sirat Organic Mart</title>
+        <title>লিগ্যাল পেজ — Admin — Shoplexᴮᴰ</title>
       </Helmet>
 
       <h1 className="mb-6 text-xl font-semibold text-[color:var(--color-deep-green)]">
@@ -170,9 +170,7 @@ const LegalPages = () => {
       )}
 
       {isLoading ? (
-        <div className="flex min-h-[30vh] items-center justify-center">
-          <Spinner size="lg" />
-        </div>
+        <ListSkeleton rows={4} />
       ) : error ? (
         <p className="py-16 text-center text-red-600">{error}</p>
       ) : (

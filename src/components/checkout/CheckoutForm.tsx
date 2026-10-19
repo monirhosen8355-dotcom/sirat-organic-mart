@@ -2,15 +2,23 @@ import { useState, type FormEvent } from 'react'
 import Input from '../common/Input'
 import Button from '../common/Button'
 import { checkoutSchema, type CheckoutFormData } from '../../lib/validation/checkoutSchema'
+import { DELIVERY_CHARGES, DELIVERY_ZONE_LABELS, type DeliveryZone } from '../../lib/delivery/deliveryZones'
 
 interface CheckoutFormProps {
   onSubmit: (data: CheckoutFormData) => void
   isSubmitting: boolean
+  deliveryZone: DeliveryZone | null
+  onDeliveryZoneChange: (zone: DeliveryZone) => void
 }
 
 type FormErrors = Partial<Record<keyof CheckoutFormData, string>>
 
-const CheckoutForm = ({ onSubmit, isSubmitting }: CheckoutFormProps) => {
+const CheckoutForm = ({
+  onSubmit,
+  isSubmitting,
+  deliveryZone,
+  onDeliveryZoneChange,
+}: CheckoutFormProps) => {
   const [values, setValues] = useState({
     customerName: '',
     customerPhone: '',
@@ -31,7 +39,7 @@ const CheckoutForm = ({ onSubmit, isSubmitting }: CheckoutFormProps) => {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
 
-    const result = checkoutSchema.safeParse(values)
+    const result = checkoutSchema.safeParse({ ...values, deliveryZone })
 
     if (!result.success) {
       const fieldErrors: FormErrors = {}
@@ -70,6 +78,48 @@ const CheckoutForm = ({ onSubmit, isSubmitting }: CheckoutFormProps) => {
         error={errors.customerPhone}
         disabled={isSubmitting}
       />
+
+      <div className="w-full">
+        <label className="mb-1.5 block text-sm font-medium text-[color:var(--color-text-primary)]">
+          ডেলিভারি এলাকা
+          <span className="ml-0.5 text-red-600">*</span>
+        </label>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {(Object.keys(DELIVERY_ZONE_LABELS) as DeliveryZone[]).map((zone) => (
+            <label
+              key={zone}
+              className={[
+                'flex cursor-pointer items-center justify-between rounded-lg border px-3.5 py-2.5 text-sm transition-colors',
+                deliveryZone === zone
+                  ? 'border-[color:var(--color-emerald)] bg-[color:var(--color-emerald)]/5'
+                  : 'border-gray-300 hover:border-gray-400',
+                isSubmitting ? 'cursor-not-allowed opacity-70' : '',
+              ].join(' ')}
+            >
+              <span className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="deliveryZone"
+                  value={zone}
+                  checked={deliveryZone === zone}
+                  onChange={() => onDeliveryZoneChange(zone)}
+                  disabled={isSubmitting}
+                  className="h-4 w-4 accent-[color:var(--color-emerald)]"
+                />
+                {DELIVERY_ZONE_LABELS[zone]}
+              </span>
+              <span className="font-medium text-[color:var(--color-text-secondary)]">
+                ৳{DELIVERY_CHARGES[zone]}
+              </span>
+            </label>
+          ))}
+        </div>
+        {errors.deliveryZone && (
+          <p role="alert" className="mt-1 text-xs text-red-600">
+            {errors.deliveryZone}
+          </p>
+        )}
+      </div>
 
       <div className="w-full">
         <label

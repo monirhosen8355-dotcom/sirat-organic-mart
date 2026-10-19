@@ -9,7 +9,7 @@ const ReviewList = ({ reviews }: ReviewListProps) => {
   if (reviews.length === 0) {
     return (
       <p className="py-4 text-sm text-[color:var(--color-text-secondary)]">
-        এখনো কোনো রিভিউ নেই। প্রথম রিভিউ দিন!
+        No reviews yet. Be the first to review!
       </p>
     )
   }

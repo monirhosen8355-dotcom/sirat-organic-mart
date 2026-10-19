@@ -17,6 +17,17 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
+    function hasValidProductType() {
+      return !('type' in request.resource.data) ||
+        request.resource.data.type == 'normal' ||
+        (
+          request.resource.data.type == 'affiliate' &&
+          'affiliateUrl' in request.resource.data &&
+          request.resource.data.affiliateUrl is string &&
+          request.resource.data.affiliateUrl.matches('^https?://[^\\s]+$')
+        );
+    }
+
     // ---------- admins (allow-list, admin-only readable, never client-writable) ----------
     match /admins/{adminId} {
       allow read: if isAdmin();
@@ -38,7 +49,7 @@ service cloud.firestore {
     // ---------- products (public read, admin write) ----------
     match /products/{productId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() && hasValidProductType();
     }
 
     // ---------- categories (public read, admin write) ----------
@@ -96,6 +107,18 @@ service cloud.firestore {
       allow read: if resource.data.active == true || isAdmin();
       allow write: if isAdmin();
     }
+
+    // ---------- brands (public read active brands, admin write) ----------
+    match /brands/{brandId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ---------- homeBanners (public read active banners, admin write) ----------
+    match /homeBanners/{bannerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
     
     // ---------- siteSettings (admin write, optional public read for non-sensitive config) ----------
     match /siteSettings/{docId} {
@@ -107,6 +130,54 @@ service cloud.firestore {
     match /legalPages/{pageId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    // ---------- support FAQs (public read, admin write) ----------
+    match /supportFAQs/{faqId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ---------- customer support conversations ----------
+    // Each customer has one conversation document whose ID is their auth UID.
+    match /supportConversations/{conversationId} {
+      allow read: if isAdmin() ||
+        (isSignedIn() &&
+          conversationId == request.auth.uid &&
+          (!exists(/databases/$(database)/documents/supportConversations/$(conversationId)) ||
+            resource.data.customerId == request.auth.uid));
+      allow create: if isSignedIn() &&
+        conversationId == request.auth.uid &&
+        request.resource.data.customerId == request.auth.uid;
+      allow update: if isAdmin() || (
+        isSignedIn() &&
+        resource.data.customerId == request.auth.uid &&
+        request.resource.data.customerId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'lastMessage',
+          'lastMessageAt',
+          'updatedAt',
+          'unreadForAdmin',
+          'unreadForCustomer'
+        ]) &&
+        request.resource.data.unreadForCustomer == false
+      );
+      allow delete: if isAdmin();
+
+      match /messages/{messageId} {
+        allow read: if isAdmin() || (
+          isSignedIn() &&
+          get(/databases/$(database)/documents/supportConversations/$(conversationId)).data.customerId == request.auth.uid
+        );
+        allow create: if isAdmin() || (
+          isSignedIn() &&
+          get(/databases/$(database)/documents/supportConversations/$(conversationId)).data.customerId == request.auth.uid &&
+          request.resource.data.conversationId == conversationId &&
+          request.resource.data.senderId == request.auth.uid &&
+          request.resource.data.senderRole == 'customer'
+        );
+        allow update, delete: if isAdmin();
+      }
     }
 
     // ---------- default deny for anything not explicitly listed ----------

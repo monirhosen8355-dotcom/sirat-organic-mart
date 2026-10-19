@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import CheckoutForm from '../../components/checkout/CheckoutForm'
-import OrderSummary, { DELIVERY_CHARGE } from '../../components/checkout/OrderSummary'
+import OrderSummary from '../../components/checkout/OrderSummary'
+import { DELIVERY_CHARGES, type DeliveryZone } from '../../lib/delivery/deliveryZones'
 import { useCartStore } from '../../store/cartStore'
 import { useAuthStore } from '../../store/authStore'
 import { createOrder } from '../../services/orders/orderService'
@@ -19,12 +20,13 @@ const Checkout = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [discount, setDiscount] = useState(0)
   const [appliedCouponCode, setAppliedCouponCode] = useState<string | null>(null)
+  const [deliveryZone, setDeliveryZone] = useState<DeliveryZone | null>(null)
+  const deliveryCharge = deliveryZone ? DELIVERY_CHARGES[deliveryZone] : 0
 
-  // অর্ডার সফল হওয়ার পর clearCart() কল করা হয়, তখনও items.length === 0
-  // হয়ে যায় — কিন্তু তখন এই রিডাইরেক্ট ফায়ার করা উচিত না (নইলে
-  // /order-confirmation-এর বদলে /cart-এ চলে যাওয়ার race তৈরি হয়)। state
-  // ব্যবহার করা হচ্ছে (ref না) কারণ render-এর সময় এই ভ্যালু পড়তে হয়,
-  // আর ref.current render-time-এ পড়া React-এর নিয়মে নিষিদ্ধ।
+  // After an order is successfully placed, clearCart() runs and items.length becomes 0.
+  // We should not trigger this redirect at that moment, otherwise a race could redirect to
+  // /cart instead of /order-confirmation. State is used instead of ref because the value is
+  // read during render, and reading ref.current during render is against React rules.
   const [orderPlaced, setOrderPlaced] = useState(false)
 
   const handleCouponApplied = (
@@ -65,6 +67,7 @@ const Checkout = () => {
         userId: user?.uid,
         customerName: data.customerName,
         customerPhone: data.customerPhone,
+        deliveryZone: data.deliveryZone,
         deliveryAddress: data.deliveryAddress,
         deliveryNote: data.deliveryNote || undefined,
         items: items.map((item) => ({
@@ -77,10 +80,10 @@ const Checkout = () => {
           variantLabel: item.variantLabel,
         })),
         subtotal,
-        deliveryCharge: DELIVERY_CHARGE,
+        deliveryCharge,
         discount,
         couponCode: appliedCouponCode ?? undefined,
-        total: subtotal + DELIVERY_CHARGE - discount,
+        total: subtotal + deliveryCharge - discount,
         paymentMethod: 'cod',
       })
 
@@ -89,7 +92,7 @@ const Checkout = () => {
       clearCart()
     } catch (error) {
       console.error('Order creation failed:', error)
-      toast.error('অর্ডার সাবমিট করা যায়নি। আবার চেষ্টা করুন।')
+      toast.error('The order could not be submitted. Please try again.')
       setIsSubmitting(false)
     }
   }
@@ -97,7 +100,7 @@ const Checkout = () => {
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
       <h1 className="mb-6 text-xl font-semibold text-[color:var(--color-text-primary)]">
-        চেকআউট
+        Checkout
       </h1>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -105,6 +108,8 @@ const Checkout = () => {
           <CheckoutForm
             onSubmit={handleSubmit}
             isSubmitting={isSubmitting}
+            deliveryZone={deliveryZone}
+            onDeliveryZoneChange={setDeliveryZone}
           />
         </div>
 
@@ -114,6 +119,7 @@ const Checkout = () => {
             subtotal={subtotal}
             onCouponApplied={handleCouponApplied}
             discount={discount}
+            deliveryCharge={deliveryCharge}
             appliedCouponCode={appliedCouponCode}
           />
         </div>
